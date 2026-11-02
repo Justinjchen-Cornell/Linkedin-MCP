@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>设置</h1>
+    <div class="meta">采集范围、本人主页与关注词</div>
+  </div>
+</header>
+
+<section class="panel">
+  <h2>采集设置</h2>
+  <form method="post" action="/settings" class="form-grid">
+    <label>本人 LinkedIn 主页 URL
+      <input type="url" name="own_profile_url" value="{{ values.get('own_profile_url', '') }}" placeholder="https://www.linkedin.com/in/your-name/" />
+    </label>
+    <label>自动滚动屏数（0–3）
+      <input type="number" name="capture_scroll_screens" min="0" max="3" value="{{ values.get('capture_scroll_screens', '3') }}" />
+    </label>
+    <label>单次最大帖子数
+      <input type="number" name="max_posts_per_capture" min="1" max="100" value="{{ values.get('max_posts_per_capture', '100') }}" />
+    </label>
+    <button type="submit">保存设置</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>关注词（{{ watchlist|length }}）</h2>
+  <form method="post" action="/watchlist" class="inline-form">
+    <select name="kind">
+      <option value="keyword">关键词</option>
+      <option value="hashtag">话题标签</option>
+    </select>
+    <input type="text" name="value" placeholder="例如 SaaS、#B2B" required />
+    <button type="submit">添加</button>
+  </form>
+  <div class="watchlist">
+    {% for item in watchlist %}
+    <div class="watch-row">
+      <span class="tag">{{ item.kind }}</span>
+      <span class="watch-value">{{ item.value }}</span>
+      <form method="post" action="/watchlist/{{ item.id }}/delete">
+        <button type="submit" class="danger">删除</button>
+      </form>
+    </div>
+    {% else %}
+    <p class="muted">还没有关注词。添加 3–5 个，用来跑一轮采集。</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,13 +1,15 @@
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app import models  # noqa: F401
 from app.db import get_session, init_db
 from app.routers import extension, health, people, posts, settings, watchlist
+from app.models import Setting, WatchlistItem
 from app.routers.posts import get_post, list_posts
+from app.services.settings import set_setting
 
 app = FastAPI(title="LinkedIn Workbench")
 init_db()
@@ -88,3 +90,63 @@ def post_page(
         name="post_detail.html",
         context={"post": data, "comments": data["comments"]},
     )
+
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings_page(
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    values = {row.key: row.value for row in session.exec(select(Setting)).all()}
+    items = session.exec(select(WatchlistItem).order_by(WatchlistItem.id)).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="settings.html",
+        context={"values": values, "watchlist": items},
+    )
+
+
+@app.post("/settings")
+def save_settings(
+    own_profile_url: str = Form(""),
+    capture_scroll_screens: str = Form("3"),
+    max_posts_per_capture: str = Form("100"),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    set_setting(session, "own_profile_url", own_profile_url.strip())
+    set_setting(session, "capture_scroll_screens", capture_scroll_screens)
+    set_setting(session, "max_posts_per_capture", max_posts_per_capture)
+    session.commit()
+    return RedirectResponse("/settings", status_code=303)
+
+
+@app.post("/watchlist")
+def add_watchlist_form(
+    kind: str = Form(...),
+    value: str = Form(...),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    value = value.strip()
+    if value:
+        existing = session.exec(
+            select(WatchlistItem).where(
+                WatchlistItem.kind == kind,
+                WatchlistItem.value == value,
+            )
+        ).first()
+        if existing is None:
+            session.add(WatchlistItem(kind=kind, value=value))
+            session.commit()
+    return RedirectResponse("/settings", status_code=303)
+
+
+@app.post("/watchlist/{item_id}/delete")
+def delete_watchlist_form(
+    item_id: int,
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    item = session.get(WatchlistItem, item_id)
+    if item is not None:
+        session.delete(item)
+        session.commit()
+    return RedirectResponse("/settings", status_code=303)

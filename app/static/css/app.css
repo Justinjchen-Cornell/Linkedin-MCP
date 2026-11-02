@@ -52,3 +52,14 @@ h1 { font-size: 24px; margin: 0 0 4px; }
   .sidebar .hint { display: none; }
   .main { padding: 20px 16px 40px; }
 }
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
+.panel h2 { font-size: 16px; margin: 0 0 12px; }
+.form-grid { display: grid; gap: 12px; max-width: 520px; }
+.form-grid label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.form-grid input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; }
+.form-grid button, .inline-form button { justify-self: start; padding: 9px 14px; border: 0; border-radius: 8px; background: var(--brand); color: #fff; cursor: pointer; }
+.inline-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.inline-form input, .inline-form select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.watch-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.watch-value { flex: 1; }
+button.danger { padding: 5px 10px; border: 1px solid #f0c7c7; background: #fff5f5; color: #b91c1c; border-radius: 6px; cursor: pointer; }

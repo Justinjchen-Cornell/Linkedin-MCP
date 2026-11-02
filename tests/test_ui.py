@@ -17,3 +17,14 @@ def test_post_detail_shows_comments(client):
     client.post("/api/extension/capture", json=payload)
     html = client.get("/posts/1").text
     assert "hello" in html and "nice" in html
+
+
+def test_settings_page_saves_profile_and_watchlist(client):
+    r = client.post("/settings", data={"own_profile_url": "https://www.linkedin.com/in/me/",
+                                       "capture_scroll_screens": "3",
+                                       "max_posts_per_capture": "100"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert client.get("/api/settings").json()["own_profile_url"] == "https://www.linkedin.com/in/me/"
+    r2 = client.post("/watchlist", data={"kind": "keyword", "value": "SaaS"}, follow_redirects=False)
+    assert r2.status_code == 303
+    assert len(client.get("/api/watchlist").json()) == 1
