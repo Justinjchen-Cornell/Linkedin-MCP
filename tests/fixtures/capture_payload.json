@@ -1,0 +1,42 @@
+{
+  "page_url": "https://www.linkedin.com/feed/",
+  "page_type": "feed",
+  "posts": [
+    {
+      "urn": "urn:li:activity:111",
+      "url": "https://www.linkedin.com/feed/update/urn:li:activity:111/",
+      "author_name": "Alice Chen",
+      "author_url": "https://www.linkedin.com/in/alice/",
+      "author_headline": "Founder at Acme",
+      "text": "AI content ops for B2B founders.",
+      "posted_at": "2026-11-01T10:00:00Z",
+      "reactions": 1234,
+      "comments_count": 12,
+      "reposts": 3,
+      "media": [],
+      "source": "feed",
+      "keyword": null,
+      "raw_html": "<div class=\"feed-shared-update-v2\">Alice</div>",
+      "comments": [
+        {"author_name": "Bob Lee", "author_url": "https://www.linkedin.com/in/bob/", "text": "Great point", "created_at": null, "reactions": 2}
+      ]
+    },
+    {
+      "urn": "urn:li:activity:222",
+      "url": "https://www.linkedin.com/feed/update/urn:li:activity:222/",
+      "author_name": "Bob Lee",
+      "author_url": "https://www.linkedin.com/in/bob/",
+      "author_headline": "Growth lead",
+      "text": "LinkedIn growth tactics that work.",
+      "posted_at": "2026-11-02T10:00:00Z",
+      "reactions": 2300,
+      "comments_count": 45,
+      "reposts": 7,
+      "media": [],
+      "source": "feed",
+      "keyword": null,
+      "raw_html": "<div class=\"feed-shared-update-v2\">Bob</div>",
+      "comments": []
+    }
+  ]
+}
