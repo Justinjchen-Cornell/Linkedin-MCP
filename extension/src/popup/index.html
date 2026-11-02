@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font: 14px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; margin: 0; padding: 12px; width: 280px; color: #172033; }
+      h1 { font-size: 16px; margin: 0 0 8px; }
+      #status { padding: 8px; border-radius: 6px; background: #f1f4f8; margin-bottom: 10px; }
+      label { display: block; font-size: 12px; color: #5b6778; margin-bottom: 4px; }
+      input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #cfd8e3; border-radius: 6px; margin-bottom: 8px; }
+      button { width: 100%; padding: 8px; border: 0; border-radius: 6px; background: #0a66c2; color: white; margin-bottom: 6px; cursor: pointer; }
+      button.secondary { background: #e8eef5; color: #172033; }
+    </style>
+  </head>
+  <body>
+    <h1>LinkedIn 工作台</h1>
+    <div id="status">检查中…</div>
+    <label for="backend">后台地址</label>
+    <input id="backend" value="http://127.0.0.1:8765" />
+    <button id="save">保存地址</button>
+    <button id="open" class="secondary">打开工作台</button>
+    <script src="main.js"></script>
+  </body>
+</html>
