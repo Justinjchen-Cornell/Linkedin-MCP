@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from app.models import CapturedPost, Comment, Person
 from app.schemas.capture import CapturePayload, CapturedPostIn
 from app.services.dedup import content_hash, dedup_key, normalize_url
+from app.services.search import index_post
 from app.services.settings import get_setting
 
 
@@ -128,6 +129,7 @@ def ingest_capture(session: Session, payload: CapturePayload) -> IngestResult:
             )
             session.add(record)
             session.flush()
+            index_post(session, record)
             result.inserted += 1
             post_id = record.id
         else:
@@ -143,6 +145,7 @@ def ingest_capture(session: Session, payload: CapturePayload) -> IngestResult:
             existing.is_own = is_own or existing.is_own
             existing.last_captured_at = now
             session.add(existing)
+            index_post(session, existing)
             result.updated += 1
             post_id = existing.id
 

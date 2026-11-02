@@ -1,16 +1,52 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.db import get_session
 from app.models import CapturedPost, Comment
+from app.services.heat import heat_score
+from app.services.search import search_post_ids
 
 router = APIRouter()
 
 
 @router.get("/posts")
-def list_posts(session: Session = Depends(get_session)) -> dict:
-    posts = session.exec(select(CapturedPost).order_by(CapturedPost.id.desc())).all()
-    return {"items": posts, "total": len(posts)}
+def list_posts(
+    q: str = "",
+    source: str | None = None,
+    own: bool | None = None,
+    min_reactions: int = 0,
+    sort: str = "new",
+    limit: int = 20,
+    offset: int = 0,
+    session: Session = Depends(get_session),
+) -> dict:
+    stmt = select(CapturedPost)
+    if source:
+        stmt = stmt.where(CapturedPost.source == source)
+    if own is not None:
+        stmt = stmt.where(CapturedPost.is_own == own)
+    if min_reactions:
+        stmt = stmt.where(CapturedPost.reactions >= min_reactions)
+    if q:
+        ids = search_post_ids(session, q)
+        if not ids:
+            return {"items": [], "total": 0}
+        stmt = stmt.where(CapturedPost.id.in_(ids))
+
+    posts = session.exec(stmt).all()
+    total = len(posts)
+    if sort == "heat":
+        now = datetime.now(timezone.utc)
+        posts.sort(key=lambda post: heat_score(post, now), reverse=True)
+    else:
+        posts.sort(
+            key=lambda post: (post.posted_at or post.first_captured_at, post.id or 0),
+            reverse=True,
+        )
+    page = posts[offset : offset + max(1, min(limit, 200))]
+    return {"items": page, "total": total}
 
 
 @router.get("/posts/{post_id}")
