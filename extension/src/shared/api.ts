@@ -1,4 +1,4 @@
-import type { PollResponse } from "./types";
+import type { PollResponse, WatchlistTask } from "./types";
 
 const DEFAULT_BACKEND = "http://127.0.0.1:8765";
 
@@ -27,4 +27,8 @@ export async function pollBackend(): Promise<PollResponse> {
       last_seen: new Date().toISOString(),
     }),
   });
+}
+
+export async function getWatchlistRound(limit = 5): Promise<{ tasks: WatchlistTask[] }> {
+  return apiFetch<{ tasks: WatchlistTask[] }>(`/api/watchlist/round?limit=${limit}`);
 }

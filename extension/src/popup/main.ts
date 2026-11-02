@@ -53,6 +53,16 @@ async function init(): Promise<void> {
   document.getElementById("capture")?.addEventListener("click", () => void runCapture());
   document.getElementById("captureProfile")?.addEventListener("click", () => void runCapture("profile"));
 
+  document.getElementById("runRound")?.addEventListener("click", async () => {
+    setMessage("已启动，后台标签页会逐个采集…");
+    const result = await sendRuntime({ type: "RUN_ROUND" });
+    if (result?.error) {
+      setMessage(`启动失败：${result.error}`, false);
+    } else {
+      setMessage(`已启动：${result.count} 个关注词，每个间隔约 1 分钟`);
+    }
+  });
+
   document.getElementById("selfcheck")?.addEventListener("click", async () => {
     const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", dryRun: true });
     if (result?.stats) {

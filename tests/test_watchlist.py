@@ -12,3 +12,9 @@ def test_watchlist_crud_and_round(client):
 def test_watchlist_duplicate_returns_409(client):
     client.post("/api/watchlist", json={"kind": "keyword", "value": "SaaS"})
     assert client.post("/api/watchlist", json={"kind": "keyword", "value": "SaaS"}).status_code == 409
+
+
+def test_round_limits_to_five(client):
+    for i in range(7):
+        client.post("/api/watchlist", json={"kind": "keyword", "value": f"k{i}"})
+    assert len(client.get("/api/watchlist/round?limit=5").json()["tasks"]) == 5
