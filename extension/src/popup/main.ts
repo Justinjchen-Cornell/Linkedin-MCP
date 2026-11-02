@@ -39,16 +39,19 @@ async function init(): Promise<void> {
     await chrome.tabs.create({ url: await getBackendUrl() });
   });
 
-  document.getElementById("capture")?.addEventListener("click", async () => {
+  async function runCapture(source?: string): Promise<void> {
     setMessage("采集中…");
-    const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB" });
+    const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", source });
     if (result?.error) {
       setMessage(`采集失败：${result.error}`, false);
     } else {
       setMessage(`新增 ${result.inserted} 条，更新 ${result.updated} 条，跳过 ${result.skipped} 条`);
       await refreshStatus();
     }
-  });
+  }
+
+  document.getElementById("capture")?.addEventListener("click", () => void runCapture());
+  document.getElementById("captureProfile")?.addEventListener("click", () => void runCapture("profile"));
 
   document.getElementById("selfcheck")?.addEventListener("click", async () => {
     const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", dryRun: true });

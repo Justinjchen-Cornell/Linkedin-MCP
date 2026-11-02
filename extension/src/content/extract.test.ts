@@ -54,4 +54,10 @@ describe("extract", () => {
     expect(isSecurityChallenge(d)).toBe(true);
     expect(isSecurityChallenge(doc("feed_en.html"))).toBe(false);
   });
+
+  it("parses profile activity posts", () => {
+    const posts = extractPostsFromDocument(doc("profile_en.html"), "profile");
+    expect(posts[0]).toMatchObject({ author_name: "Me", source: "profile" });
+    expect(posts[0].text).toContain("my post");
+  });
 });
