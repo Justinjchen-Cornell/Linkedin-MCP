@@ -1,5 +1,6 @@
 import { apiFetch, getWatchlistRound, pollBackend } from "./shared/api";
 import { buildRoundPlan } from "./shared/round";
+import { captureLimits } from "./shared/capture-settings";
 import type { WatchlistTask } from "./shared/types";
 
 const POLL_ALARM = "poll";
@@ -13,6 +14,8 @@ interface RoundState {
   index: number;
   captured: number;
   failed: number;
+  scrollScreens: number;
+  maxPosts: number;
 }
 
 function ensurePollAlarm(): void {
@@ -64,8 +67,9 @@ async function sendCaptureToTab(
   dryRun = false,
   scrollScreens?: number,
   keyword?: string | null,
+  maxPosts = 100,
 ): Promise<any> {
-  const message = { type: "CAPTURE_PAGE", source, dryRun, scrollScreens, keyword };
+  const message = { type: "CAPTURE_PAGE", source, dryRun, scrollScreens, keyword, maxPosts };
   try {
     return await chrome.tabs.sendMessage(tabId, message);
   } catch {
@@ -74,12 +78,17 @@ async function sendCaptureToTab(
   }
 }
 
-export async function captureActiveTab(source?: string, dryRun = false): Promise<any> {
+export async function captureActiveTab(
+  source?: string,
+  dryRun = false,
+  scrollScreens = 0,
+  maxPosts = 100,
+): Promise<any> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return { error: "no_active_tab" };
   if (!tab.url?.includes("linkedin.com")) return { error: "not_linkedin" };
 
-  const response = await sendCaptureToTab(tab.id, source, dryRun);
+  const response = await sendCaptureToTab(tab.id, source, dryRun, scrollScreens, null, maxPosts);
   if (!response?.ok) {
     if (response?.error === "security_challenge") notifySecurityChallenge();
     return { error: response?.error || "capture_failed" };
@@ -104,7 +113,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "CAPTURE_ACTIVE_TAB") {
-    void captureActiveTab(msg.source, Boolean(msg.dryRun))
+    void captureActiveTab(msg.source, Boolean(msg.dryRun), msg.scrollScreens, msg.maxPosts)
       .then((result) => sendResponse(result))
       .catch((error) => sendResponse({ error: String(error) }));
     return true;
@@ -164,8 +173,9 @@ async function processNextRoundTask(): Promise<void> {
       tabId,
       task.kind === "hashtag" ? "hashtag" : "search",
       false,
-      3,
+      state.scrollScreens,
       task.value,
+      state.maxPosts,
     );
     if (!response?.ok) {
       if (response?.error === "security_challenge") {
@@ -206,7 +216,9 @@ export async function runWatchlistRound(): Promise<any> {
   const { tasks } = await getWatchlistRound(5);
   const plan = buildRoundPlan(tasks);
   if (!plan.length) return { error: "no_tasks" };
-  await setRoundState({ tasks: plan, index: 0, captured: 0, failed: 0 });
+  const settings = await apiFetch<Record<string, string>>("/api/settings").catch(() => ({}));
+  const limits = captureLimits(settings);
+  await setRoundState({ tasks: plan, index: 0, captured: 0, failed: 0, ...limits });
   void processNextRoundTask();
   return { started: true, count: plan.length };
 }

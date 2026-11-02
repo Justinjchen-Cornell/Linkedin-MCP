@@ -1,4 +1,5 @@
 import { apiFetch, getBackendUrl } from "../shared/api";
+import { captureLimits } from "../shared/capture-settings";
 
 function setMessage(text: string, ok = true): void {
   const message = document.getElementById("message");
@@ -41,7 +42,9 @@ async function init(): Promise<void> {
 
   async function runCapture(source?: string): Promise<void> {
     setMessage("采集中…");
-    const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", source });
+    const settings = await apiFetch<Record<string, string>>("/api/settings").catch(() => ({}));
+    const limits = captureLimits(settings);
+    const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", source, ...limits });
     if (result?.error) {
       setMessage(`采集失败：${result.error}`, false);
     } else {

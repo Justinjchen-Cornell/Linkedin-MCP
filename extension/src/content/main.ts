@@ -17,7 +17,8 @@ if (shouldInject(window)) {
         window.scrollBy(0, window.innerHeight * 0.9);
         await new Promise((resolve) => setTimeout(resolve, 2000 + Math.random() * 3000));
       }
-      const posts = extractPostsFromDocument(document, source, msg.keyword ?? null).slice(0, 100);
+      const maxPosts = Math.min(Math.max(Number(msg.maxPosts) || 100, 1), 100);
+      const posts = extractPostsFromDocument(document, source, msg.keyword ?? null).slice(0, maxPosts);
       if (msg.dryRun) {
         sendResponse({
           ok: true,
