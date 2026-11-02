@@ -3,12 +3,13 @@ from fastapi.responses import JSONResponse
 
 from app import models  # noqa: F401
 from app.db import init_db
-from app.routers import health, settings
+from app.routers import health, settings, watchlist
 
 app = FastAPI(title="LinkedIn Workbench")
 init_db()
 app.include_router(health.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
+app.include_router(watchlist.router, prefix="/api")
 
 ALLOWED_ORIGINS = (
     "chrome-extension://",
