@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="/posts">← 返回情报库</a>
+<article class="detail">
+  <h1>{{ post.author_name or "未知作者" }}</h1>
+  <div class="meta">
+    {{ post.author_headline or "" }}
+    {% if post.posted_at %} · {{ post.posted_at }}{% endif %}
+    · {{ post.source }}
+  </div>
+  <div class="body">{{ post.text }}</div>
+  <div class="stats">
+    <span>反应 {{ post.reactions }}</span>
+    <span>评论 {{ post.comments_count }}</span>
+    <span>转发 {{ post.reposts }}</span>
+  </div>
+  {% if post.url %}<a href="{{ post.url }}" target="_blank" rel="noreferrer">打开原帖</a>{% endif %}
+</article>
+
+<section class="comments">
+  <h2>评论 {{ comments|length }}</h2>
+  {% for comment in comments %}
+  <div class="comment">
+    <b>{{ comment.author_name or "匿名" }}</b>
+    <p>{{ comment.text }}</p>
+  </div>
+  {% else %}
+  <p class="muted">没有采集到评论。</p>
+  {% endfor %}
+</section>
+
+{% if post.raw_html %}
+<details class="raw">
+  <summary>原始 HTML</summary>
+  <pre>{{ post.raw_html }}</pre>
+</details>
+{% endif %}
+{% endblock %}

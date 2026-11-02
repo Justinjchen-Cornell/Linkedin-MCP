@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>情报库</h1>
+    <div class="meta">共 {{ total }} 条</div>
+  </div>
+</header>
+
+<form class="filters" method="get" action="/posts">
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="搜索正文或作者" />
+  <select name="source">
+    <option value="">全部来源</option>
+    {% for value, label in [("feed", "信息流"), ("search", "搜索"), ("hashtag", "话题"), ("profile", "个人主页")] %}
+    <option value="{{ value }}" {% if filters.source == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="sort">
+    <option value="new" {% if filters.sort != "heat" %}selected{% endif %}>最新</option>
+    <option value="heat" {% if filters.sort == "heat" %}selected{% endif %}>热度</option>
+  </select>
+  <label class="check"><input type="checkbox" name="own" value="true" {% if filters.own %}checked{% endif %} /> 只看我的</label>
+  <button type="submit">筛选</button>
+</form>
+
+<div class="cards">
+  {% for post in posts %}
+  <article class="card">
+    <div class="card-head">
+      <a href="/posts/{{ post.id }}">{{ post.author_name or "未知作者" }}</a>
+      <span>{{ post.author_headline or "" }}</span>
+    </div>
+    <p class="excerpt">{{ post.text[:300] }}{% if post.text|length > 300 %}…{% endif %}</p>
+    <div class="stats">
+      <span>反应 {{ post.reactions }}</span>
+      <span>评论 {{ post.comments_count }}</span>
+      <span>转发 {{ post.reposts }}</span>
+      <span class="tag">{{ post.source }}</span>
+    </div>
+    <div class="card-foot">
+      <span>{{ post.posted_at or post.first_captured_at }}</span>
+      {% if post.url %}<a href="{{ post.url }}" target="_blank" rel="noreferrer">原帖</a>{% endif %}
+    </div>
+  </article>
+  {% else %}
+  <div class="empty">还没有采集内容。打开 LinkedIn，点扩展里的“采集本页”。</div>
+  {% endfor %}
+</div>
+
+<nav class="pager">
+  {% if offset > 0 %}<a href="/posts?q={{ filters.q }}&source={{ filters.source or '' }}&sort={{ filters.sort }}&offset={{ offset - limit }}">上一页</a>{% endif %}
+  {% if offset + limit < total %}<a href="/posts?q={{ filters.q }}&source={{ filters.source or '' }}&sort={{ filters.sort }}&offset={{ offset + limit }}">下一页</a>{% endif %}
+</nav>
+{% endblock %}
