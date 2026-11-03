@@ -1,6 +1,7 @@
 import { apiFetch, getWatchlistRound, pollBackend } from "./shared/api";
 import { buildRoundPlan } from "./shared/round";
 import { captureLimits } from "./shared/capture-settings";
+import { withTimeout } from "./shared/timeout";
 import type { WatchlistTask } from "./shared/types";
 
 const POLL_ALARM = "poll";
@@ -71,10 +72,10 @@ async function sendCaptureToTab(
 ): Promise<any> {
   const message = { type: "CAPTURE_PAGE", source, dryRun, scrollScreens, keyword, maxPosts };
   try {
-    return await chrome.tabs.sendMessage(tabId, message);
+    return await withTimeout(chrome.tabs.sendMessage(tabId, message), 20000, "content_script_timeout");
   } catch {
     await chrome.scripting.executeScript({ target: { tabId }, files: ["content/main.js"] });
-    return await chrome.tabs.sendMessage(tabId, message);
+    return await withTimeout(chrome.tabs.sendMessage(tabId, message), 20000, "content_script_timeout");
   }
 }
 
@@ -84,21 +85,27 @@ export async function captureActiveTab(
   scrollScreens = 0,
   maxPosts = 100,
 ): Promise<any> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return { error: "no_active_tab" };
-  if (!tab.url?.includes("linkedin.com")) return { error: "not_linkedin" };
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return { error: "no_active_tab" };
+    if (!tab.url?.includes("linkedin.com")) return { error: "not_linkedin" };
 
-  const response = await sendCaptureToTab(tab.id, source, dryRun, scrollScreens, null, maxPosts);
-  if (!response?.ok) {
-    if (response?.error === "security_challenge") notifySecurityChallenge();
-    return { error: response?.error || "capture_failed" };
+    const response = await sendCaptureToTab(tab.id, source, dryRun, scrollScreens, null, maxPosts);
+    console.log("[LinkedIn 工作台] content response", response);
+    if (!response?.ok) {
+      if (response?.error === "security_challenge") notifySecurityChallenge();
+      return { error: response?.error || "capture_failed" };
+    }
+    if (dryRun) return { stats: response.stats };
+
+    return apiFetch<{ inserted: number; updated: number; skipped: number }>(
+      "/api/extension/capture",
+      { method: "POST", body: JSON.stringify(response.payload) },
+    );
+  } catch (error) {
+    console.error("[LinkedIn 工作台] captureActiveTab failed", error);
+    return { error: String(error) };
   }
-  if (dryRun) return { stats: response.stats };
-
-  return apiFetch<{ inserted: number; updated: number; skipped: number }>(
-    "/api/extension/capture",
-    { method: "POST", body: JSON.stringify(response.payload) },
-  );
 }
 
 chrome.runtime.onInstalled.addListener(ensurePollAlarm);

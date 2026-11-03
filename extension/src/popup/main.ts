@@ -1,5 +1,6 @@
 import { apiFetch, getBackendUrl } from "../shared/api";
 import { captureLimits } from "../shared/capture-settings";
+import { withTimeout } from "../shared/timeout";
 
 function setMessage(text: string, ok = true): void {
   const message = document.getElementById("message");
@@ -22,7 +23,11 @@ async function refreshStatus(): Promise<void> {
 }
 
 async function sendRuntime(message: unknown): Promise<any> {
-  return chrome.runtime.sendMessage(message);
+  try {
+    return await withTimeout(chrome.runtime.sendMessage(message), 25000, "background_timeout");
+  } catch (error) {
+    return { error: String(error) };
+  }
 }
 
 async function init(): Promise<void> {
@@ -45,8 +50,8 @@ async function init(): Promise<void> {
     const settings = await apiFetch<Record<string, string>>("/api/settings").catch(() => ({}));
     const limits = captureLimits(settings);
     const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", source, ...limits });
-    if (result?.error) {
-      setMessage(`采集失败：${result.error}`, false);
+    if (!result || result.error || typeof result.inserted !== "number") {
+      setMessage(`采集失败：${result?.error || "no_response"}`, false);
     } else {
       setMessage(`新增 ${result.inserted} 条，更新 ${result.updated} 条，跳过 ${result.skipped} 条`);
       await refreshStatus();
@@ -59,8 +64,8 @@ async function init(): Promise<void> {
   document.getElementById("runRound")?.addEventListener("click", async () => {
     setMessage("已启动，后台标签页会逐个采集…");
     const result = await sendRuntime({ type: "RUN_ROUND" });
-    if (result?.error) {
-      setMessage(`启动失败：${result.error}`, false);
+    if (!result || result.error || typeof result.count !== "number") {
+      setMessage(`启动失败：${result?.error || "no_response"}`, false);
     } else {
       setMessage(`已启动：${result.count} 个关注词，每个间隔约 1 分钟`);
     }

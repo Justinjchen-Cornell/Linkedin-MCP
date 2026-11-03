@@ -74,10 +74,35 @@ function countFrom(root: Element, selectors: string[]): number {
   for (const selector of selectors) {
     const found = root.querySelector(selector);
     if (!found) continue;
-    const label = found.getAttribute("aria-label") || textOf(found);
+    const label = `${found.getAttribute("aria-label") || ""} ${textOf(found)}`.trim();
     if (label) return parseCount(label);
   }
   return 0;
+}
+
+const NEW_POST_SELECTOR = "div[role='listitem'][componentkey^='update-card-focus']";
+const OLD_POST_SELECTOR =
+  "div.feed-shared-update-v2[data-urn], div[data-urn^='urn:li:activity'], li[data-urn^='urn:li:activity']";
+
+function extractAuthorName(el: Element): string {
+  for (const prefix of ["Open control menu for post by ", "Hide post by "]) {
+    const button = el.querySelector(`button[aria-label^='${prefix}']`);
+    const label = button?.getAttribute("aria-label");
+    if (label) return label.slice(prefix.length).trim();
+  }
+  const avatar = el.querySelector("img[alt^='View ']") as HTMLImageElement | null;
+  if (avatar?.alt) {
+    const match = avatar.alt.match(/^View (.+?)[’']s profile/);
+    if (match) return match[1].trim();
+  }
+  return firstText(el, AUTHOR_NAME_SELECTORS);
+}
+
+function extractAuthorLink(el: Element): HTMLAnchorElement | null {
+  const avatar = el.querySelector("img[alt^='View ']");
+  const link = avatar?.closest("a[href*='/in/']");
+  if (link) return link as HTMLAnchorElement;
+  return pick(el, AUTHOR_LINK_SELECTORS) as HTMLAnchorElement | null;
 }
 
 function extractComments(el: Element): CapturedCommentPayload[] {
@@ -98,9 +123,13 @@ export function extractPostFromElement(
   source: CaptureSource,
   keyword?: string | null,
 ): CapturedPostPayload | null {
+  const isNewPost = el.matches(NEW_POST_SELECTOR);
+  const isOldPost = el.matches(OLD_POST_SELECTOR);
+  if (!isNewPost && !isOldPost) return null;
+
   const urn = el.getAttribute("data-urn");
-  const authorLink = pick(el, AUTHOR_LINK_SELECTORS) as HTMLAnchorElement | null;
-  const authorName = firstText(el, AUTHOR_NAME_SELECTORS);
+  const authorLink = extractAuthorLink(el);
+  const authorName = extractAuthorName(el);
   const text = firstText(el, TEXT_SELECTORS);
   if (!text && !authorName) return null;
 
@@ -121,10 +150,15 @@ export function extractPostFromElement(
     comments_count: countFrom(el, COMMENT_COUNT_SELECTORS),
     reposts: countFrom(el, REPOST_SELECTORS),
     media: Array.from(el.querySelectorAll("img"))
-      .map((img) => (img as HTMLImageElement).src)
-      .filter(Boolean)
+      .map((img) => img as HTMLImageElement)
+      .filter(
+        (image) =>
+          image.src &&
+          !(image.alt || "").startsWith("View ") &&
+          !image.src.includes("profile-displayphoto"),
+      )
       .slice(0, 4)
-      .map((url) => ({ type: "image", url })),
+      .map((image) => ({ type: "image", url: image.src })),
     source,
     keyword: keyword ?? null,
     raw_html: el.outerHTML.slice(0, 200_000),

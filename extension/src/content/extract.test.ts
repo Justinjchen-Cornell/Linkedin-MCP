@@ -55,6 +55,20 @@ describe("extract", () => {
     expect(isSecurityChallenge(doc("feed_en.html"))).toBe(false);
   });
 
+  it("parses the new LinkedIn feed DOM", () => {
+    const posts = extractPostsFromDocument(doc("feed_new.html"), "feed");
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toMatchObject({
+      author_name: "Ashil Doorga",
+      reactions: 71,
+      comments_count: 2,
+      reposts: 9,
+    });
+    expect(posts[0].author_url).toContain("/in/ashildoorga/");
+    expect(posts[0].text).toContain("Yangshan copper");
+    expect(posts[0].media).toHaveLength(0);
+  });
+
   it("parses profile activity posts", () => {
     const posts = extractPostsFromDocument(doc("profile_en.html"), "profile");
     expect(posts[0]).toMatchObject({ author_name: "Me", source: "profile" });

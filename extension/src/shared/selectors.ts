@@ -1,4 +1,5 @@
 export const POST_SELECTORS = [
+  "div[role='listitem'][componentkey^='update-card-focus']",
   "div.feed-shared-update-v2[data-urn]",
   "div[data-urn^='urn:li:activity']",
   "li[data-urn^='urn:li:activity']",
@@ -11,8 +12,8 @@ export const AUTHOR_NAME_SELECTORS = [
 ];
 
 export const AUTHOR_LINK_SELECTORS = [
-  "a.update-components-actor__meta-link[href]",
   "a[href*='/in/']",
+  "a.update-components-actor__meta-link[href]",
 ];
 
 export const HEADLINE_SELECTORS = [
@@ -27,16 +28,19 @@ export const TEXT_SELECTORS = [
 ];
 
 export const REACTION_SELECTORS = [
+  "button[aria-label^='Reaction button state:']",
   ".social-details-social-counts__reactions-count",
   "button[aria-label*='reaction']",
 ];
 
 export const COMMENT_COUNT_SELECTORS = [
+  "button[aria-label='Comment']",
   "button[aria-label*='comment']",
   ".social-details-social-counts__comments",
 ];
 
 export const REPOST_SELECTORS = [
+  "button[aria-label='Repost']",
   "button[aria-label*='repost']",
   ".social-details-social-counts__reposts",
 ];
