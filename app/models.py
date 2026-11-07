@@ -122,3 +122,34 @@ class PostMetric(SQLModel, table=True):
     saves: int | None = None
     sends: int | None = None
     raw_text: str | None = None
+
+
+class Draft(SQLModel, table=True):
+    __tablename__ = "drafts"
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str = ""
+    body: str = ""
+    language: str = "en"
+    status: str = "draft"
+    source_post_ids: str = "[]"
+    hook_type: str | None = None
+    ai_run_id: int | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class Schedule(SQLModel, table=True):
+    __tablename__ = "schedules"
+
+    id: int | None = Field(default=None, primary_key=True)
+    draft_id: int = Field(foreign_key="drafts.id", index=True)
+    scheduled_at_utc: datetime
+    timezone: str = "Asia/Shanghai"
+    status: str = "scheduled"
+    notified_at: datetime | None = None
+    opened_at: datetime | None = None
+    published_at: datetime | None = None
+    published_url: str | None = None
+    error: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
