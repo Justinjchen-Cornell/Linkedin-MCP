@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { expect, it } from "vitest";
-import { extractPostMetrics } from "./post_metrics";
+import { extractPostMetrics, hasPostMetrics } from "./post_metrics";
 
 it("parses post summary metrics", () => {
   const doc = new JSDOM(readFileSync("tests/fixtures/post_summary.html", "utf8")).window.document;
@@ -24,6 +24,12 @@ it("handles blank lines between number and label", () => {
 Impressions</pre></body>`).window.document;
   const m = extractPostMetrics(doc, "https://www.linkedin.com/analytics/post-summary/urn:li:activity:1/");
   expect(m.impressions).toBe(141);
+});
+
+it("detects post metrics readiness", () => {
+  expect(hasPostMetrics("665 impressions 184 members reached 1 social engagements")).toBe(true);
+  expect(hasPostMetrics("665 impressions")).toBe(false);
+  expect(hasPostMetrics("Loading...")).toBe(false);
 });
 
 it("returns null for missing metrics", () => {

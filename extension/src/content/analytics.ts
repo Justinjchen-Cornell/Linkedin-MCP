@@ -24,6 +24,14 @@ function metric(text: string, pattern: RegExp): number | null {
   return match ? parseMetricNumber(match[1]) : null;
 }
 
+export function hasProfileMetrics(text: string): boolean {
+  return /followers|profile views|粉丝|主页访问/i.test(text);
+}
+
+export function hasProfilePosts(doc: Document): boolean {
+  return doc.querySelectorAll("div[role='listitem'][componentkey^='update-card-focus']").length > 0;
+}
+
 export function extractAccountSnapshot(doc: Document): AccountSnapshotPayload {
   const text = doc.body?.innerText || doc.body?.textContent || "";
   return {

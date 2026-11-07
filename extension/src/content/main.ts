@@ -1,7 +1,7 @@
-import { extractAccountSnapshot } from "./analytics";
+import { extractAccountSnapshot, hasProfileMetrics, hasProfilePosts } from "./analytics";
 import { detectPageType, extractPostsFromDocument, isSecurityChallenge } from "./extract";
 import { shouldInject } from "./guard";
-import { extractPostMetrics } from "./post_metrics";
+import { extractPostMetrics, hasPostMetrics } from "./post_metrics";
 
 if (shouldInject(window)) {
   window.__linkedinWorkbenchInjected = true;
@@ -13,6 +13,13 @@ if (shouldInject(window)) {
           if (isSecurityChallenge(document)) {
             sendResponse({ ok: false, error: "security_challenge" });
             return;
+          }
+          const started = Date.now();
+          while (Date.now() - started < 15000) {
+            const text = document.body?.innerText || "";
+            if (hasProfileMetrics(text) && hasProfilePosts(document)) break;
+            if (!hasProfilePosts(document)) window.scrollBy(0, window.innerHeight * 0.8);
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
           const snapshot = extractAccountSnapshot(document);
           const posts = extractPostsFromDocument(document, "profile").slice(0, 100);
@@ -33,7 +40,10 @@ if (shouldInject(window)) {
             return;
           }
           window.scrollTo(0, document.body.scrollHeight);
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const started = Date.now();
+          while (!hasPostMetrics(document.body?.innerText || "") && Date.now() - started < 10000) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
           sendResponse({ ok: true, metrics: extractPostMetrics(document, location.href) });
         } catch (error) {
           console.error("[LinkedIn 工作台] post metrics failed", error);

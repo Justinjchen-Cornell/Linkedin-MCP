@@ -30,6 +30,14 @@ function metricAfterLabel(text: string, label: string): number | null {
   return match ? parseMetricNumber(match[1]) : null;
 }
 
+export function hasPostMetrics(text: string): boolean {
+  return (
+    /impressions|曝光/i.test(text) &&
+    /members reached|触达/i.test(text) &&
+    /social engagements|互动/i.test(text)
+  );
+}
+
 export function extractPostMetrics(doc: Document, url: string): PostMetricsPayload {
   const text = doc.body?.innerText || doc.body?.textContent || "";
   const metricsText = text.includes("Discovery") ? text.slice(text.indexOf("Discovery")) : text;

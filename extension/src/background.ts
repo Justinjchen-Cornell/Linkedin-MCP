@@ -318,11 +318,11 @@ async function processNextSyncMetric(): Promise<void> {
   try {
     const tab = await chrome.tabs.create({
       url: `https://www.linkedin.com/analytics/post-summary/${urn}/`,
-      active: false,
+      active: true,
     });
     tabId = tab.id;
     if (!tabId) throw new Error("tab_create_failed");
-    await waitForTabComplete(tabId);
+    await Promise.race([waitForTabComplete(tabId).catch(() => undefined), sleep(8000)]);
     await sleep(2000 + Math.random() * 2000);
     const response = await sendMessageToTab(tabId, { type: "EXTRACT_POST_METRICS" });
     if (!response?.ok) {
@@ -368,7 +368,7 @@ export async function syncAccountData(): Promise<any> {
     const tab = await chrome.tabs.create({ url: profileUrl, active: false });
     tabId = tab.id;
     if (!tabId) throw new Error("tab_create_failed");
-    await waitForTabComplete(tabId);
+    await Promise.race([waitForTabComplete(tabId).catch(() => undefined), sleep(8000)]);
     await sleep(2000);
     const response = await sendMessageToTab(tabId, { type: "SYNC_PROFILE" });
     if (!response?.ok) {
@@ -390,7 +390,7 @@ export async function syncAccountData(): Promise<any> {
       return { started: true, urns: 0 };
     }
     await setSyncState({ urns, index: 0, metrics: 0, failed: 0 });
-    void processNextSyncMetric();
+    chrome.alarms.create(SYNC_ALARM, { delayInMinutes: 0.1 });
     return { started: true, urns: urns.length };
   } catch (error) {
     console.error("[LinkedIn 工作台] syncAccountData failed", error);
@@ -405,3 +405,10 @@ export async function syncAccountData(): Promise<any> {
     }
   }
 }
+
+// Test/debug hooks; only reachable from the extension service worker context.
+(globalThis as any).__lwSyncAccountData = syncAccountData;
+(globalThis as any).__lwClearSync = async () => {
+  await clearSyncState();
+  chrome.alarms.clear(SYNC_ALARM);
+};
