@@ -36,3 +36,11 @@ def test_analytics_page_shows_snapshot_and_posts(client):
     client.post("/api/extension/post-metrics", json=[{"urn": "urn:1", "impressions": 665}])
     html = client.get("/analytics").text
     assert "1,773" in html and "665" in html
+
+
+def test_settings_saves_analytics_sync_hour(client):
+    r = client.post("/settings", data={"own_profile_url": "", "capture_scroll_screens": "3",
+                                       "max_posts_per_capture": "100", "analytics_sync_hour": "9"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    assert client.get("/api/settings").json()["analytics_sync_hour"] == "9"

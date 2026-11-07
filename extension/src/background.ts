@@ -10,6 +10,7 @@ const ROUND_ALARM = "round_next";
 const ROUND_STATE_KEY = "roundState";
 const SYNC_ALARM = "sync_next";
 const SYNC_STATE_KEY = "syncState";
+const ANALYTICS_ALARM = "analytics_daily";
 const SECURITY_ICON =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
 
@@ -127,6 +128,10 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     void processNextRoundTask();
   } else if (alarm.name === SYNC_ALARM) {
     void processNextSyncMetric();
+  } else if (alarm.name === ANALYTICS_ALARM) {
+    void syncAccountData().finally(() => {
+      void scheduleAnalyticsSync();
+    });
   }
 });
 
@@ -152,7 +157,23 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return undefined;
 });
 
+async function scheduleAnalyticsSync(): Promise<void> {
+  const settings = await apiFetch<Record<string, string>>("/api/settings").catch(
+    (): Record<string, string> => ({}),
+  );
+  const rawHour = Number(settings.analytics_sync_hour ?? 9);
+  const hour = Number.isFinite(rawHour) ? Math.min(Math.max(Math.trunc(rawHour), 0), 23) : 9;
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(hour, 0, 0, 0);
+  if (next.getTime() <= now.getTime()) {
+    next.setDate(next.getDate() + 1);
+  }
+  chrome.alarms.create(ANALYTICS_ALARM, { when: next.getTime() });
+}
+
 void ensurePollAlarm();
+void scheduleAnalyticsSync();
 void pollBackend().catch(() => undefined);
 
 async function getRoundState(): Promise<RoundState | undefined> {

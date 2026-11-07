@@ -113,11 +113,13 @@ def save_settings(
     own_profile_url: str = Form(""),
     capture_scroll_screens: str = Form("3"),
     max_posts_per_capture: str = Form("100"),
+    analytics_sync_hour: str = Form("9"),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     set_setting(session, "own_profile_url", own_profile_url.strip())
     set_setting(session, "capture_scroll_screens", capture_scroll_screens)
     set_setting(session, "max_posts_per_capture", max_posts_per_capture)
+    set_setting(session, "analytics_sync_hour", analytics_sync_hour)
     session.commit()
     return RedirectResponse("/settings", status_code=303)
 
