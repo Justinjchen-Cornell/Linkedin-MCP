@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div><h1>草稿</h1><div class="meta">共 {{ drafts|length }} 篇</div></div>
+</header>
+
+<section class="panel">
+  <h2>新建草稿</h2>
+  <form method="post" action="/drafts" class="form-grid">
+    <label>标题<input type="text" name="title" placeholder="可选" /></label>
+    <label>正文<textarea name="body" rows="4" maxlength="3000" placeholder="先写个开头也行"></textarea></label>
+    <button type="submit">新建</button>
+  </form>
+</section>
+
+<div class="cards">
+  {% for draft in drafts %}
+  <article class="card">
+    <div class="card-head"><a href="/drafts/{{ draft.id }}">{{ draft.title or "未命名草稿" }}</a><span class="tag">{{ draft.status }}</span></div>
+    <p class="excerpt">{{ draft.body[:200] }}{% if draft.body|length > 200 %}…{% endif %}</p>
+    <div class="card-foot"><span>{{ draft.updated_at }}</span><a href="/drafts/{{ draft.id }}">编辑</a></div>
+  </article>
+  {% else %}
+  <div class="empty">还没有草稿。新建一篇，或用 AI 生成。</div>
+  {% endfor %}
+</div>
+{% endblock %}

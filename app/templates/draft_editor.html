@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="/drafts">← 返回草稿</a>
+<header class="page-head"><div><h1>{{ draft.title or "未命名草稿" }}</h1><div class="meta">状态：{{ draft.status }}</div></div></header>
+
+<div class="editor-layout">
+  <form method="post" action="/drafts/{{ draft.id }}" class="panel editor-form">
+    <label>标题<input type="text" name="title" value="{{ draft.title }}" /></label>
+    <label>语言
+      <select name="language">
+        <option value="en" {% if draft.language == "en" %}selected{% endif %}>English</option>
+        <option value="zh" {% if draft.language == "zh" %}selected{% endif %}>中文</option>
+      </select>
+    </label>
+    <label>正文（≤3000 字符）
+      <textarea name="body" rows="18" maxlength="3000">{{ draft.body }}</textarea>
+    </label>
+    <button type="submit">保存草稿</button>
+  </form>
+
+  <aside class="panel ai-panel">
+    <h2>AI 多版</h2>
+    <label>主题<input id="ai-topic" type="text" placeholder="例如 AI capex 的信用风险" /></label>
+    <label>角度<input id="ai-angle" type="text" placeholder="故事 / 反共识 / 清单 / 复盘" /></label>
+    <button type="button" id="ai-generate">生成 3 版</button>
+    <div id="variants" class="variants"><p class="muted">配置 API Key 后可生成。</p></div>
+  </aside>
+</div>
+
+<script>
+document.getElementById("ai-generate").addEventListener("click", async () => {
+  const box = document.getElementById("variants");
+  box.textContent = "生成中…";
+  const payload = {
+    topic: document.getElementById("ai-topic").value.trim(),
+    angle: document.getElementById("ai-angle").value.trim(),
+    language: document.querySelector("select[name=language]").value,
+    count: 3,
+  };
+  if (!payload.topic) { box.textContent = "先填主题。"; return; }
+  try {
+    const response = await fetch("/api/ai/generate", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) { box.textContent = data.detail || "生成失败"; return; }
+    box.innerHTML = "";
+    data.variants.forEach((variant, index) => {
+      const card = document.createElement("div");
+      card.className = "variant";
+      const title = document.createElement("b");
+      title.textContent = variant.title || `版本 ${index + 1}`;
+      const body = document.createElement("p");
+      body.textContent = variant.body;
+      const use = document.createElement("button");
+      use.type = "button";
+      use.textContent = "采用";
+      use.addEventListener("click", () => {
+        document.querySelector("textarea[name=body]").value = variant.body;
+      });
+      card.append(title, body, use);
+      box.append(card);
+    });
+  } catch (error) {
+    box.textContent = String(error);
+  }
+});
+</script>
+{% endblock %}

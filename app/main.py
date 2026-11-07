@@ -1,4 +1,6 @@
-from fastapi import Depends, FastAPI, Form, Request
+from datetime import datetime, timezone
+
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -7,7 +9,7 @@ from sqlmodel import Session, select
 from app import models  # noqa: F401
 from app.db import get_session, init_db
 from app.routers import ai, analytics, drafts, extension, health, people, posts, schedules, settings, watchlist
-from app.models import Setting, WatchlistItem
+from app.models import Draft, Setting, WatchlistItem
 from app.routers.posts import get_post, list_posts
 from app.services import ai_config
 from app.services.analytics import latest_post_metrics, overview as analytics_overview
@@ -180,3 +182,62 @@ def analytics_page(request: Request, session: Session = Depends(get_session)):
         name="analytics.html",
         context={"overview": data, "posts": posts},
     )
+
+
+@app.get("/drafts", response_class=HTMLResponse)
+def drafts_page(request: Request, session: Session = Depends(get_session)):
+    drafts = session.exec(select(Draft).order_by(Draft.updated_at.desc())).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="drafts.html",
+        context={"drafts": drafts},
+    )
+
+
+@app.post("/drafts")
+def create_draft_form(
+    title: str = Form(""), body: str = Form(""), session: Session = Depends(get_session)
+):
+    if len(body) > 3000:
+        raise HTTPException(status_code=422, detail="body exceeds 3000 characters")
+    draft = Draft(title=title.strip(), body=body)
+    session.add(draft)
+    session.commit()
+    session.refresh(draft)
+    return RedirectResponse(f"/drafts/{draft.id}", status_code=303)
+
+
+@app.get("/drafts/{draft_id}", response_class=HTMLResponse)
+def draft_editor_page(
+    request: Request, draft_id: int, session: Session = Depends(get_session)
+):
+    draft = session.get(Draft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+    return templates.TemplateResponse(
+        request=request,
+        name="draft_editor.html",
+        context={"draft": draft},
+    )
+
+
+@app.post("/drafts/{draft_id}")
+def save_draft_form(
+    draft_id: int,
+    title: str = Form(""),
+    body: str = Form(""),
+    language: str = Form("en"),
+    session: Session = Depends(get_session),
+):
+    draft = session.get(Draft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+    if len(body) > 3000:
+        raise HTTPException(status_code=422, detail="body exceeds 3000 characters")
+    draft.title = title.strip()
+    draft.body = body
+    draft.language = language
+    draft.updated_at = datetime.now(timezone.utc)
+    session.add(draft)
+    session.commit()
+    return RedirectResponse(f"/drafts/{draft_id}", status_code=303)

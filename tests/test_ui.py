@@ -56,3 +56,13 @@ def test_settings_saves_ai_config(client):
     values = client.get("/api/settings").json()
     assert values["ai_base_url"] == "https://api.example.com"
     assert values["ai_model"] == "test-model"
+
+
+def test_draft_pages_and_save(client):
+    r = client.post("/drafts", data={"title": "T", "body": "hello"}, follow_redirects=False)
+    assert r.status_code == 303
+    draft_id = int(r.headers["location"].rstrip("/").split("/")[-1])
+    html = client.get(f"/drafts/{draft_id}").text
+    assert "hello" in html
+    client.post(f"/drafts/{draft_id}", data={"title": "T2", "body": "hi"}, follow_redirects=False)
+    assert "hi" in client.get(f"/drafts/{draft_id}").text

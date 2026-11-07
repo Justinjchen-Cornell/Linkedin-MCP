@@ -72,3 +72,13 @@ button.danger { padding: 5px 10px; border: 1px solid #f0c7c7; background: #fff5f
 table.metrics { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 table.metrics th, table.metrics td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: 13px; vertical-align: top; }
 table.metrics th { background: #f1f4f8; color: var(--muted); font-weight: 600; }
+
+.editor-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.editor-form label, .ai-panel label { display: grid; gap: 4px; margin-bottom: 10px; font-size: 13px; color: var(--muted); }
+.editor-form input, .editor-form select, .editor-form textarea, .ai-panel input { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.editor-form textarea { resize: vertical; }
+.variants { margin-top: 12px; display: grid; gap: 8px; }
+.variant { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #fbfcfe; }
+.variant p { white-space: pre-wrap; font-size: 13px; max-height: 160px; overflow: auto; }
+.variant button { padding: 5px 10px; border: 0; border-radius: 6px; background: var(--brand); color: #fff; cursor: pointer; }
+@media (max-width: 860px) { .editor-layout { grid-template-columns: 1fr; } }
