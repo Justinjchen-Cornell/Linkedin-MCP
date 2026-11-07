@@ -87,3 +87,38 @@ class Event(SQLModel, table=True):
     message: str = ""
     detail_json: str = "{}"
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class AccountSnapshot(SQLModel, table=True):
+    __tablename__ = "account_snapshots"
+
+    id: int | None = Field(default=None, primary_key=True)
+    captured_at: datetime = Field(default_factory=utcnow, index=True)
+    followers: int | None = None
+    connections: int | None = None
+    profile_views: int | None = None
+    post_impressions_7d: int | None = None
+    search_appearances_7d: int | None = None
+    raw_text: str | None = None
+
+
+class PostMetric(SQLModel, table=True):
+    __tablename__ = "post_metrics"
+
+    id: int | None = Field(default=None, primary_key=True)
+    post_id: int | None = Field(default=None, foreign_key="captured_posts.id", index=True)
+    urn: str | None = Field(default=None, index=True)
+    captured_at: datetime = Field(default_factory=utcnow, index=True)
+    impressions: int | None = None
+    members_reached: int | None = None
+    in_network_pct: float | None = None
+    out_network_pct: float | None = None
+    profile_viewers: int | None = None
+    followers_gained: int | None = None
+    social_engagements: int | None = None
+    reactions: int | None = None
+    comments: int | None = None
+    reposts: int | None = None
+    saves: int | None = None
+    sends: int | None = None
+    raw_text: str | None = None

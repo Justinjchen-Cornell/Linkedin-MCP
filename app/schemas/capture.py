@@ -28,6 +28,7 @@ class CapturedPostIn(BaseModel):
     keyword: str | None = None
     raw_html: str | None = None
     comments: list[CapturedCommentIn] = Field(default_factory=list)
+    impressions: int | None = None
 
     @field_validator("raw_html")
     @classmethod

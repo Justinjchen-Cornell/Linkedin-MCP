@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from app import models  # noqa: F401
 from app.db import get_session, init_db
-from app.routers import extension, health, people, posts, settings, watchlist
+from app.routers import analytics, extension, health, people, posts, settings, watchlist
 from app.models import Setting, WatchlistItem
 from app.routers.posts import get_post, list_posts
 from app.services.settings import set_setting
@@ -19,6 +19,7 @@ app.include_router(watchlist.router, prefix="/api")
 app.include_router(extension.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")
 app.include_router(people.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

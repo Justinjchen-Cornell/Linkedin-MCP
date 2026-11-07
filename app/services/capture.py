@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
-from app.models import CapturedPost, Comment, Person
+from app.models import CapturedPost, Comment, Person, PostMetric
 from app.schemas.capture import CapturePayload, CapturedPostIn
 from app.services.dedup import content_hash, dedup_key, normalize_url
 from app.services.search import index_post
@@ -22,7 +22,20 @@ class IngestResult:
 def _find_existing(session: Session, post: CapturedPostIn) -> CapturedPost | None:
     kind, value = dedup_key(post)
     if kind == "urn":
-        return session.exec(select(CapturedPost).where(CapturedPost.urn == value)).first()
+        found = session.exec(select(CapturedPost).where(CapturedPost.urn == value)).first()
+        if found:
+            return found
+        found = session.exec(
+            select(CapturedPost).where(CapturedPost.content_hash == content_hash(post))
+        ).first()
+        if found:
+            return found
+        normalized = normalize_url(post.url)
+        if normalized:
+            for candidate in session.exec(select(CapturedPost)).all():
+                if normalize_url(candidate.url) == normalized:
+                    return candidate
+        return None
     if kind == "url":
         exact = session.exec(select(CapturedPost).where(CapturedPost.url == post.url)).first()
         if exact:
@@ -140,6 +153,7 @@ def ingest_capture(session: Session, payload: CapturePayload) -> IngestResult:
             existing.author_name = existing.author_name or post.author_name
             existing.author_url = existing.author_url or post.author_url
             existing.author_headline = existing.author_headline or post.author_headline
+            existing.urn = post.urn or existing.urn
             existing.raw_html = post.raw_html or existing.raw_html
             existing.content_hash = content_hash(post)
             existing.is_own = is_own or existing.is_own
@@ -150,6 +164,15 @@ def ingest_capture(session: Session, payload: CapturePayload) -> IngestResult:
             post_id = existing.id
 
         result.post_ids.append(post_id)
+        if post.impressions is not None:
+            session.add(
+                PostMetric(
+                    post_id=post_id,
+                    urn=post.urn,
+                    captured_at=now,
+                    impressions=post.impressions,
+                )
+            )
         _upsert_person(session, post.author_name, post.author_url, post.author_headline, now)
         for comment in post.comments:
             _ingest_comment(session, post_id, comment, now)
