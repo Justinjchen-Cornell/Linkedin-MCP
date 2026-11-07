@@ -32,6 +32,8 @@ if (shouldInject(window)) {
             sendResponse({ ok: false, error: "security_challenge" });
             return;
           }
+          window.scrollTo(0, document.body.scrollHeight);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           sendResponse({ ok: true, metrics: extractPostMetrics(document, location.href) });
         } catch (error) {
           console.error("[LinkedIn 工作台] post metrics failed", error);
