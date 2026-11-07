@@ -24,6 +24,7 @@ export interface CapturedPostPayload {
   keyword: string | null;
   raw_html: string;
   comments: CapturedCommentPayload[];
+  impressions: number | null;
 }
 
 export interface PollResponse {

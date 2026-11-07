@@ -66,6 +66,8 @@ describe("extract", () => {
     });
     expect(posts[0].author_url).toContain("/in/ashildoorga/");
     expect(posts[0].text).toContain("Yangshan copper");
+    expect(posts[0].urn).toBe("urn:li:activity:7521581116454113280");
+    expect(posts[0].impressions).toBe(665);
     expect(posts[0].media).toHaveLength(0);
   });
 

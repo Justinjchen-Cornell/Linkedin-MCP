@@ -127,7 +127,12 @@ export function extractPostFromElement(
   const isOldPost = el.matches(OLD_POST_SELECTOR);
   if (!isNewPost && !isOldPost) return null;
 
-  const urn = el.getAttribute("data-urn");
+  const analyticsLink = el.querySelector(
+    "a[href*='/analytics/post-summary/urn:li:activity:']",
+  ) as HTMLAnchorElement | null;
+  const urnFromAnalytics = analyticsLink?.getAttribute("href")?.match(/urn:li:activity:\d+/)?.[0] ?? null;
+  const impressionsText = (analyticsLink?.textContent || "").match(/([\d,.KM]+)\s+impressions/i)?.[1];
+  const urn = el.getAttribute("data-urn") || urnFromAnalytics;
   const authorLink = extractAuthorLink(el);
   const authorName = extractAuthorName(el);
   const text = firstText(el, TEXT_SELECTORS);
@@ -163,6 +168,7 @@ export function extractPostFromElement(
     keyword: keyword ?? null,
     raw_html: el.outerHTML.slice(0, 200_000),
     comments: extractComments(el),
+    impressions: impressionsText ? parseCount(impressionsText) : null,
   };
 }
 
