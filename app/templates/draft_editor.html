@@ -18,6 +18,14 @@
     <button type="submit">保存草稿</button>
   </form>
 
+  <form method="post" action="/drafts/{{ draft.id }}/schedule" class="panel editor-form">
+    <h2>排期</h2>
+    <label>发布时间（本地时区）
+      <input type="datetime-local" name="scheduled_at" required />
+    </label>
+    <button type="submit">加入排期</button>
+  </form>
+
   <aside class="panel ai-panel">
     <h2>AI 多版</h2>
     <label>主题<input id="ai-topic" type="text" placeholder="例如 AI capex 的信用风险" /></label>

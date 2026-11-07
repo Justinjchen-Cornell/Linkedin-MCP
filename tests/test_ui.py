@@ -66,3 +66,10 @@ def test_draft_pages_and_save(client):
     assert "hello" in html
     client.post(f"/drafts/{draft_id}", data={"title": "T2", "body": "hi"}, follow_redirects=False)
     assert "hi" in client.get(f"/drafts/{draft_id}").text
+
+
+def test_calendar_page_lists_scheduled_post(client):
+    d = client.post("/api/drafts", json={"title": "T", "body": "calendar body"}).json()
+    client.post(f"/api/drafts/{d['id']}/schedule", json={"scheduled_at": "2026-11-01T00:00:00Z"})
+    html = client.get("/calendar").text
+    assert "calendar body" in html and "复制并打开 LinkedIn" in html

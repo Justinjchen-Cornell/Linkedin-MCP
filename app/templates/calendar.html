@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div><h1>排期</h1><div class="meta">共 {{ items|length }} 条</div></div>
+</header>
+
+<div class="cards">
+  {% for item in items %}
+  <article class="card">
+    <div class="card-head">
+      <a href="/drafts/{{ item.draft.id }}">{{ item.draft.title or "未命名草稿" }}</a>
+      <span class="tag">{{ item.schedule.status }}</span>
+    </div>
+    <p class="excerpt">{{ item.draft.body[:300] }}{% if item.draft.body|length > 300 %}…{% endif %}</p>
+    <div class="card-foot"><span>{{ item.schedule.scheduled_at_utc }}（{{ item.schedule.timezone }}）</span></div>
+    <div class="actions">
+      <button class="copy-open" data-id="{{ item.schedule.id }}" data-body="{{ item.draft.body }}">复制并打开 LinkedIn</button>
+      <form method="post" action="/calendar/{{ item.schedule.id }}/published">
+        <button type="submit" class="secondary">标记已发布</button>
+      </form>
+      <form method="post" action="/calendar/{{ item.schedule.id }}/skipped">
+        <button type="submit" class="secondary">跳过</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <div class="empty">还没有排期。去草稿编辑器里加一条。</div>
+  {% endfor %}
+</div>
+
+<script>
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (error) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    return ok;
+  }
+}
+document.querySelectorAll(".copy-open").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const body = button.dataset.body || "";
+    await copyText(body);
+    await fetch(`/api/schedules/${button.dataset.id}/opened`, { method: "POST" });
+    window.open("https://www.linkedin.com/feed/?shareActive=true", "_blank", "noopener");
+    location.reload();
+  });
+});
+</script>
+{% endblock %}

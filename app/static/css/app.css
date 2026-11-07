@@ -82,3 +82,7 @@ table.metrics th { background: #f1f4f8; color: var(--muted); font-weight: 600; }
 .variant p { white-space: pre-wrap; font-size: 13px; max-height: 160px; overflow: auto; }
 .variant button { padding: 5px 10px; border: 0; border-radius: 6px; background: var(--brand); color: #fff; cursor: pointer; }
 @media (max-width: 860px) { .editor-layout { grid-template-columns: 1fr; } }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.actions button { padding: 7px 12px; border: 0; border-radius: 7px; background: var(--brand); color: #fff; cursor: pointer; }
+.actions button.secondary { background: #e8eef5; color: var(--ink); }

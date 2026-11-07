@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -9,7 +10,7 @@ from sqlmodel import Session, select
 from app import models  # noqa: F401
 from app.db import get_session, init_db
 from app.routers import ai, analytics, drafts, extension, health, people, posts, schedules, settings, watchlist
-from app.models import Draft, Setting, WatchlistItem
+from app.models import Draft, Schedule, Setting, WatchlistItem
 from app.routers.posts import get_post, list_posts
 from app.services import ai_config
 from app.services.analytics import latest_post_metrics, overview as analytics_overview
@@ -241,3 +242,63 @@ def save_draft_form(
     session.add(draft)
     session.commit()
     return RedirectResponse(f"/drafts/{draft_id}", status_code=303)
+
+
+@app.get("/calendar", response_class=HTMLResponse)
+def calendar_page(request: Request, session: Session = Depends(get_session)):
+    schedules = session.exec(select(Schedule).order_by(Schedule.scheduled_at_utc)).all()
+    items = []
+    for schedule in schedules:
+        draft = session.get(Draft, schedule.draft_id)
+        if draft:
+            items.append({"schedule": schedule, "draft": draft})
+    return templates.TemplateResponse(
+        request=request,
+        name="calendar.html",
+        context={"items": items},
+    )
+
+
+@app.post("/drafts/{draft_id}/schedule")
+def schedule_draft_form(
+    draft_id: int,
+    scheduled_at: str = Form(...),
+    session: Session = Depends(get_session),
+):
+    draft = session.get(Draft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+    local = datetime.fromisoformat(scheduled_at).replace(tzinfo=ZoneInfo("Asia/Shanghai"))
+    schedule = Schedule(
+        draft_id=draft_id,
+        scheduled_at_utc=local.astimezone(timezone.utc),
+        timezone="Asia/Shanghai",
+    )
+    draft.status = "scheduled"
+    session.add(schedule)
+    session.add(draft)
+    session.commit()
+    return RedirectResponse("/calendar", status_code=303)
+
+
+@app.post("/calendar/{schedule_id}/published")
+def publish_schedule_form(
+    schedule_id: int, session: Session = Depends(get_session)
+):
+    schedule = session.get(Schedule, schedule_id)
+    if schedule is not None:
+        schedule.status = "published"
+        schedule.published_at = datetime.now(timezone.utc)
+        session.add(schedule)
+        session.commit()
+    return RedirectResponse("/calendar", status_code=303)
+
+
+@app.post("/calendar/{schedule_id}/skipped")
+def skip_schedule_form(schedule_id: int, session: Session = Depends(get_session)):
+    schedule = session.get(Schedule, schedule_id)
+    if schedule is not None:
+        schedule.status = "skipped"
+        session.add(schedule)
+        session.commit()
+    return RedirectResponse("/calendar", status_code=303)
