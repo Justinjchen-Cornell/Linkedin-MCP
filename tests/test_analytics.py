@@ -34,3 +34,30 @@ def test_recapture_with_urn_updates_existing_post(client):
     posts = client.get("/api/posts").json()["items"]
     assert len(posts) == 1
     assert posts[0]["urn"] == "urn:li:activity:555"
+
+
+def test_overview_deltas_and_posts(client):
+    client.post("/api/extension/account-snapshot", json={
+        "captured_at": "2026-11-01T00:00:00Z", "followers": 100,
+        "connections": 500, "profile_views": 900,
+        "post_impressions_7d": 1000, "search_appearances_7d": 80,
+    })
+    client.post("/api/extension/account-snapshot", json={
+        "captured_at": "2026-11-02T00:00:00Z", "followers": 110,
+        "connections": 500, "profile_views": 965,
+        "post_impressions_7d": 1512, "search_appearances_7d": 103,
+    })
+    client.post("/api/extension/capture", json={"posts": [{
+        "urn": "urn:li:activity:1", "author_name": "Me", "text": "post one", "impressions": 665,
+    }]})
+    client.post("/api/extension/post-metrics", json=[{
+        "urn": "urn:li:activity:1", "impressions": 665, "members_reached": 184,
+        "reactions": 3, "comments": 2, "reposts": 1,
+    }])
+    data = client.get("/api/analytics/overview").json()
+    assert data["latest"]["followers"] == 110
+    assert data["deltas"]["followers"] == 10
+    assert data["deltas"]["profile_views"] == 65
+    posts = client.get("/api/analytics/posts").json()["items"]
+    assert posts[0]["urn"] == "urn:li:activity:1"
+    assert posts[0]["impressions"] == 665

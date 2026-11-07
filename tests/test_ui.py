@@ -28,3 +28,11 @@ def test_settings_page_saves_profile_and_watchlist(client):
     r2 = client.post("/watchlist", data={"kind": "keyword", "value": "SaaS"}, follow_redirects=False)
     assert r2.status_code == 303
     assert len(client.get("/api/watchlist").json()) == 1
+
+
+def test_analytics_page_shows_snapshot_and_posts(client):
+    client.post("/api/extension/account-snapshot", json={"followers": 1773, "profile_views": 965})
+    client.post("/api/extension/capture", json={"posts": [{"urn": "urn:1", "author_name": "Me", "text": "post", "impressions": 665}]})
+    client.post("/api/extension/post-metrics", json=[{"urn": "urn:1", "impressions": 665}])
+    html = client.get("/analytics").text
+    assert "1,773" in html and "665" in html

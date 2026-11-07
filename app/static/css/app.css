@@ -63,3 +63,12 @@ h1 { font-size: 24px; margin: 0 0 4px; }
 .watch-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
 .watch-value { flex: 1; }
 button.danger { padding: 5px 10px; border: 1px solid #f0c7c7; background: #fff5f5; color: #b91c1c; border-radius: 6px; cursor: pointer; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.metric-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.metric-card .label { color: var(--muted); font-size: 12px; }
+.metric-card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+.metric-card .delta { font-size: 12px; color: #166534; margin-top: 2px; }
+table.metrics { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+table.metrics th, table.metrics td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: 13px; vertical-align: top; }
+table.metrics th { background: #f1f4f8; color: var(--muted); font-weight: 600; }

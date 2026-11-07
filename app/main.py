@@ -9,6 +9,7 @@ from app.db import get_session, init_db
 from app.routers import analytics, extension, health, people, posts, settings, watchlist
 from app.models import Setting, WatchlistItem
 from app.routers.posts import get_post, list_posts
+from app.services.analytics import latest_post_metrics, overview as analytics_overview
 from app.services.settings import set_setting
 
 app = FastAPI(title="LinkedIn Workbench")
@@ -151,3 +152,14 @@ def delete_watchlist_form(
         session.delete(item)
         session.commit()
     return RedirectResponse("/settings", status_code=303)
+
+
+@app.get("/analytics", response_class=HTMLResponse)
+def analytics_page(request: Request, session: Session = Depends(get_session)):
+    data = analytics_overview(session)
+    posts = latest_post_metrics(session)
+    return templates.TemplateResponse(
+        request=request,
+        name="analytics.html",
+        context={"overview": data, "posts": posts},
+    )
