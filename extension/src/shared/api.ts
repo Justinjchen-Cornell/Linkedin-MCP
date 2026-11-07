@@ -46,3 +46,18 @@ export async function postPostMetrics(metrics: unknown): Promise<unknown> {
     body: JSON.stringify([metrics]),
   });
 }
+
+export interface DueSchedule {
+  id: number;
+  scheduled_at_utc: string;
+  notified_at: string | null;
+  status: string;
+}
+
+export async function getDueSchedules(): Promise<{ items: DueSchedule[] }> {
+  return apiFetch<{ items: DueSchedule[] }>("/api/schedules/due");
+}
+
+export async function markScheduleNotified(id: number): Promise<unknown> {
+  return apiFetch(`/api/schedules/${id}/notified`, { method: "POST" });
+}

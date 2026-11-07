@@ -1,4 +1,4 @@
-import { apiFetch, getWatchlistRound, pollBackend, postAccountSnapshot, postPostMetrics } from "./shared/api";
+import { apiFetch, getDueSchedules, getWatchlistRound, markScheduleNotified, pollBackend, postAccountSnapshot, postPostMetrics } from "./shared/api";
 import { buildRoundPlan } from "./shared/round";
 import { captureLimits } from "./shared/capture-settings";
 import { withTimeout } from "./shared/timeout";
@@ -11,6 +11,7 @@ const ROUND_STATE_KEY = "roundState";
 const SYNC_ALARM = "sync_next";
 const SYNC_STATE_KEY = "syncState";
 const ANALYTICS_ALARM = "analytics_daily";
+const DUE_ALARM = "due_check";
 const SECURITY_ICON =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
 
@@ -132,6 +133,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     void syncAccountData().finally(() => {
       void scheduleAnalyticsSync();
     });
+  } else if (alarm.name === DUE_ALARM) {
+    void checkDueSchedules();
   }
 });
 
@@ -157,6 +160,26 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return undefined;
 });
 
+async function checkDueSchedules(): Promise<void> {
+  const { items } = await getDueSchedules().catch(() => ({ items: [] }));
+  for (const item of items) {
+    if (item.notified_at) continue;
+    chrome.notifications.create(`due-${item.id}`, {
+      type: "basic",
+      iconUrl: SECURITY_ICON,
+      title: "到点发帖",
+      message: `排期 #${item.id} 到点了。打开工作台复制并发布。`,
+    });
+    await markScheduleNotified(item.id).catch(() => undefined);
+  }
+}
+
+chrome.notifications.onClicked.addListener((notificationId) => {
+  if (notificationId.startsWith("due-")) {
+    void chrome.tabs.create({ url: "http://127.0.0.1:8765/calendar" });
+  }
+});
+
 async function scheduleAnalyticsSync(): Promise<void> {
   const settings = await apiFetch<Record<string, string>>("/api/settings").catch(
     (): Record<string, string> => ({}),
@@ -173,6 +196,7 @@ async function scheduleAnalyticsSync(): Promise<void> {
 }
 
 void ensurePollAlarm();
+chrome.alarms.create(DUE_ALARM, { periodInMinutes: 1 });
 void scheduleAnalyticsSync();
 void pollBackend().catch(() => undefined);
 
