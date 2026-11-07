@@ -73,3 +73,4 @@ def test_calendar_page_lists_scheduled_post(client):
     client.post(f"/api/drafts/{d['id']}/schedule", json={"scheduled_at": "2026-11-01T00:00:00Z"})
     html = client.get("/calendar").text
     assert "calendar body" in html and "复制并打开 LinkedIn" in html
+    assert "08:00" in html

@@ -24,3 +24,13 @@ def test_generate_with_mock_provider(client, monkeypatch):
     r = client.post("/api/ai/generate", json={"topic": "AI capex", "count": 1})
     assert r.status_code == 200
     assert r.json()["variants"][0]["body"] == "B"
+
+
+def test_generate_provider_error_returns_502(client, monkeypatch):
+    import httpx
+    monkeypatch.setattr("app.services.ai_config.get_api_key", lambda: "test-key")
+    def boom(messages, base_url, model, api_key):
+        raise httpx.ConnectError("boom")
+    monkeypatch.setattr("app.services.ai._chat", boom)
+    r = client.post("/api/ai/generate", json={"topic": "AI capex"})
+    assert r.status_code == 502

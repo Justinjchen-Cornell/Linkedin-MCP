@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session
@@ -64,3 +65,5 @@ def generate(payload: GeneratePayload, session: Session = Depends(get_session)) 
         )
     except AIConfigError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(status_code=502, detail=f"AI 服务请求失败：{error}") from error

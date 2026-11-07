@@ -12,7 +12,7 @@
       <span class="tag">{{ item.schedule.status }}</span>
     </div>
     <p class="excerpt">{{ item.draft.body[:300] }}{% if item.draft.body|length > 300 %}…{% endif %}</p>
-    <div class="card-foot"><span>{{ item.schedule.scheduled_at_utc }}（{{ item.schedule.timezone }}）</span></div>
+    <div class="card-foot"><span>{{ item.local_time }}（{{ item.schedule.timezone }}）</span></div>
     <div class="actions">
       <button class="copy-open" data-id="{{ item.schedule.id }}" data-body="{{ item.draft.body }}">复制并打开 LinkedIn</button>
       <form method="post" action="/calendar/{{ item.schedule.id }}/published">

@@ -251,7 +251,16 @@ def calendar_page(request: Request, session: Session = Depends(get_session)):
     for schedule in schedules:
         draft = session.get(Draft, schedule.draft_id)
         if draft:
-            items.append({"schedule": schedule, "draft": draft})
+            local_time = schedule.scheduled_at_utc.replace(tzinfo=timezone.utc).astimezone(
+                ZoneInfo(schedule.timezone)
+            )
+            items.append(
+                {
+                    "schedule": schedule,
+                    "draft": draft,
+                    "local_time": local_time.strftime("%Y-%m-%d %H:%M"),
+                }
+            )
     return templates.TemplateResponse(
         request=request,
         name="calendar.html",
