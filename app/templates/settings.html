@@ -27,6 +27,22 @@
 </section>
 
 <section class="panel">
+  <h2>AI 写稿</h2>
+  <form method="post" action="/settings" class="form-grid">
+    <label>API Base URL
+      <input type="url" name="ai_base_url" value="{{ values.get('ai_base_url', 'https://api.deepseek.com') }}" />
+    </label>
+    <label>模型
+      <input type="text" name="ai_model" value="{{ values.get('ai_model', 'deepseek-chat') }}" />
+    </label>
+    <label>API Key {% if has_ai_key %}<span class="muted">（已配置，留空保持不变）</span>{% endif %}
+      <input type="password" name="ai_api_key" placeholder="{% if has_ai_key %}留空保持不变{% else %}sk-...{% endif %}" />
+    </label>
+    <button type="submit">保存 AI 配置</button>
+  </form>
+</section>
+
+<section class="panel">
   <h2>关注词（{{ watchlist|length }}）</h2>
   <form method="post" action="/watchlist" class="inline-form">
     <select name="kind">

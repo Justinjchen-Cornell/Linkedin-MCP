@@ -44,3 +44,15 @@ def test_settings_saves_analytics_sync_hour(client):
                     follow_redirects=False)
     assert r.status_code == 303
     assert client.get("/api/settings").json()["analytics_sync_hour"] == "9"
+
+
+def test_settings_saves_ai_config(client):
+    r = client.post("/settings", data={
+        "own_profile_url": "", "capture_scroll_screens": "3", "max_posts_per_capture": "100",
+        "analytics_sync_hour": "9", "ai_base_url": "https://api.example.com", "ai_model": "test-model",
+        "ai_api_key": "",
+    }, follow_redirects=False)
+    assert r.status_code == 303
+    values = client.get("/api/settings").json()
+    assert values["ai_base_url"] == "https://api.example.com"
+    assert values["ai_model"] == "test-model"

@@ -6,9 +6,10 @@ from sqlmodel import Session, select
 
 from app import models  # noqa: F401
 from app.db import get_session, init_db
-from app.routers import analytics, drafts, extension, health, people, posts, schedules, settings, watchlist
+from app.routers import ai, analytics, drafts, extension, health, people, posts, schedules, settings, watchlist
 from app.models import Setting, WatchlistItem
 from app.routers.posts import get_post, list_posts
+from app.services import ai_config
 from app.services.analytics import latest_post_metrics, overview as analytics_overview
 from app.services.settings import set_setting
 
@@ -23,6 +24,7 @@ app.include_router(people.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(drafts.router, prefix="/api")
 app.include_router(schedules.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -106,7 +108,11 @@ def settings_page(
     return templates.TemplateResponse(
         request=request,
         name="settings.html",
-        context={"values": values, "watchlist": items},
+        context={
+            "values": values,
+            "watchlist": items,
+            "has_ai_key": bool(ai_config.get_api_key()),
+        },
     )
 
 
@@ -116,12 +122,19 @@ def save_settings(
     capture_scroll_screens: str = Form("3"),
     max_posts_per_capture: str = Form("100"),
     analytics_sync_hour: str = Form("9"),
+    ai_base_url: str = Form("https://api.deepseek.com"),
+    ai_model: str = Form("deepseek-chat"),
+    ai_api_key: str = Form(""),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     set_setting(session, "own_profile_url", own_profile_url.strip())
     set_setting(session, "capture_scroll_screens", capture_scroll_screens)
     set_setting(session, "max_posts_per_capture", max_posts_per_capture)
     set_setting(session, "analytics_sync_hour", analytics_sync_hour)
+    set_setting(session, "ai_base_url", ai_base_url.strip())
+    set_setting(session, "ai_model", ai_model.strip())
+    if ai_api_key.strip():
+        ai_config.set_api_key(ai_api_key.strip())
     session.commit()
     return RedirectResponse("/settings", status_code=303)
 
