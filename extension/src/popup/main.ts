@@ -71,6 +71,17 @@ async function init(): Promise<void> {
     }
   });
 
+  document.getElementById("syncAccount")?.addEventListener("click", async () => {
+    setMessage("同步中：会打开主页和分析页，可能需要几分钟…");
+    const result = await sendRuntime({ type: "SYNC_ACCOUNT" });
+    if (!result || result.error) {
+      setMessage(`同步失败：${result?.error || "no_response"}`, false);
+    } else {
+      setMessage(`已启动：${result.urns} 篇帖子指标，完成后会通知`);
+      await refreshStatus();
+    }
+  });
+
   document.getElementById("selfcheck")?.addEventListener("click", async () => {
     const result = await sendRuntime({ type: "CAPTURE_ACTIVE_TAB", dryRun: true });
     if (result?.stats) {

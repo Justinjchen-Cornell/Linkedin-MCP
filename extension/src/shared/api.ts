@@ -32,3 +32,17 @@ export async function pollBackend(): Promise<PollResponse> {
 export async function getWatchlistRound(limit = 5): Promise<{ tasks: WatchlistTask[] }> {
   return apiFetch<{ tasks: WatchlistTask[] }>(`/api/watchlist/round?limit=${limit}`);
 }
+
+export async function postAccountSnapshot(snapshot: unknown): Promise<unknown> {
+  return apiFetch("/api/extension/account-snapshot", {
+    method: "POST",
+    body: JSON.stringify(snapshot),
+  });
+}
+
+export async function postPostMetrics(metrics: unknown): Promise<unknown> {
+  return apiFetch("/api/extension/post-metrics", {
+    method: "POST",
+    body: JSON.stringify([metrics]),
+  });
+}

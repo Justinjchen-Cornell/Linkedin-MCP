@@ -16,6 +16,16 @@ it("parses post summary metrics", () => {
   });
 });
 
+it("handles blank lines between number and label", () => {
+  const doc = new JSDOM(`<body><pre>Discovery
+
+141
+
+Impressions</pre></body>`).window.document;
+  const m = extractPostMetrics(doc, "https://www.linkedin.com/analytics/post-summary/urn:li:activity:1/");
+  expect(m.impressions).toBe(141);
+});
+
 it("returns null for missing metrics", () => {
   const doc = new JSDOM("<body><div>665</div><div>Impressions</div></body>").window.document;
   const m = extractPostMetrics(doc, "https://www.linkedin.com/analytics/post-summary/urn:li:activity:1/");

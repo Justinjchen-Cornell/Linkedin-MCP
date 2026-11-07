@@ -1,10 +1,46 @@
+import { extractAccountSnapshot } from "./analytics";
 import { detectPageType, extractPostsFromDocument, isSecurityChallenge } from "./extract";
 import { shouldInject } from "./guard";
+import { extractPostMetrics } from "./post_metrics";
 
 if (shouldInject(window)) {
   window.__linkedinWorkbenchInjected = true;
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg?.type === "SYNC_PROFILE") {
+      (async () => {
+        try {
+          if (isSecurityChallenge(document)) {
+            sendResponse({ ok: false, error: "security_challenge" });
+            return;
+          }
+          const snapshot = extractAccountSnapshot(document);
+          const posts = extractPostsFromDocument(document, "profile").slice(0, 100);
+          sendResponse({ ok: true, snapshot, posts, page_url: location.href });
+        } catch (error) {
+          console.error("[LinkedIn 工作台] profile sync failed", error);
+          sendResponse({ ok: false, error: String(error) });
+        }
+      })();
+      return true;
+    }
+
+    if (msg?.type === "EXTRACT_POST_METRICS") {
+      (async () => {
+        try {
+          if (isSecurityChallenge(document)) {
+            sendResponse({ ok: false, error: "security_challenge" });
+            return;
+          }
+          sendResponse({ ok: true, metrics: extractPostMetrics(document, location.href) });
+        } catch (error) {
+          console.error("[LinkedIn 工作台] post metrics failed", error);
+          sendResponse({ ok: false, error: String(error) });
+        }
+      })();
+      return true;
+    }
+
     if (msg?.type !== "CAPTURE_PAGE") return;
     (async () => {
       try {
