@@ -66,6 +66,31 @@ B1 不会自动点 LinkedIn 的发布按钮；自动填入发布框和图片上�
 - 日历里的“尝试自动填入”会打开 LinkedIn 并尝试填好正文/图片；找不到发布框时用“复制并打开 LinkedIn”兜底。
 - 发布前请在 LinkedIn 里检查，确认后自己点 Post。
 
+## 本地数据 API
+
+所有数据可通过本地 REST API 读取，基地址 `http://127.0.0.1:8765/api/v1`。交互文档：<http://127.0.0.1:8765/docs>。
+
+| 端点 | 用途 |
+|---|---|
+| `GET /api/v1/me` | 账号快照（粉丝/连接/主页访问/曝光/搜索） |
+| `GET /api/v1/posts?q=&source=&own=&limit=&offset=` | 帖子列表/搜索 |
+| `GET /api/v1/posts/{id}` | 帖子详情 + 评论 |
+| `GET /api/v1/posts/{id}/metrics` | 该帖最新指标 |
+| `GET /api/v1/people?q=` | 作者/评论者 |
+| `GET /api/v1/comments?post_id=` | 评论 |
+| `GET /api/v1/analytics/overview` | 账号趋势 |
+| `GET /api/v1/analytics/posts` | 帖子表现 |
+| `GET /api/v1/search?q=` | 全文搜索 |
+| `GET /api/v1/export?format=csv\|json` | 导出帖子 |
+
+示例：
+
+```bash
+curl "http://127.0.0.1:8765/api/v1/me"
+curl "http://127.0.0.1:8765/api/v1/posts?q=Energy&limit=5"
+curl "http://127.0.0.1:8765/api/v1/export?format=csv" -o posts.csv
+```
+
 ## 测试
 
 ```powershell

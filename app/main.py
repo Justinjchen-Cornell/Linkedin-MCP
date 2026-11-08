@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app import models  # noqa: F401
 from app.db import get_session, init_db
-from app.routers import ai, analytics, drafts, extension, health, people, plan, posts, schedules, series, settings, voice, watchlist
+from app.routers import ai, analytics, api_v1, drafts, extension, health, people, plan, posts, schedules, series, settings, voice, watchlist
 from app.models import Draft, Schedule, Series, Setting, WatchlistItem
 from app.routers.drafts import upload_draft_image
 from app.routers.plan import next_issue as create_next_issue, week_plan
@@ -34,6 +34,7 @@ app.include_router(ai.router, prefix="/api")
 app.include_router(series.router, prefix="/api")
 app.include_router(plan.router, prefix="/api")
 app.include_router(voice.router, prefix="/api")
+app.include_router(api_v1.router, prefix="/api/v1")
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
