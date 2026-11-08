@@ -1,5 +1,3 @@
-import { getBackendUrl } from "../shared/api";
-
 export function fillScheduleId(url: string): number | null {
   try {
     const value = new URL(url).searchParams.get("lw_fill");
@@ -59,11 +57,10 @@ function fillEditor(editor: HTMLElement, text: string): void {
   }
 }
 
-async function attachImage(editor: HTMLElement, imageUrl: string): Promise<void> {
+function attachImageBytes(editor: HTMLElement, bytes: number[], type: string): void {
   try {
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-    const file = new File([blob], "image.png", { type: blob.type || "image/png" });
+    const blob = new Blob([new Uint8Array(bytes)], { type });
+    const file = new File([blob], "image.png", { type });
     const transfer = new DataTransfer();
     transfer.items.add(file);
     editor.dispatchEvent(
@@ -95,7 +92,6 @@ function showOverlay(
   text: string,
   scheduleId: number,
   root: ShadowRoot | Document | null,
-  base: string,
 ): void {
   document.getElementById("lw-autofill-bar")?.remove();
   const bar = document.createElement("div");
@@ -129,11 +125,9 @@ function showOverlay(
       return;
     }
     post.click();
-    await fetch(`${base}/api/schedules/${scheduleId}/published`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-    }).catch(() => undefined);
+    await chrome.runtime.sendMessage({ type: "MARK_PUBLISHED", id: scheduleId }).catch(
+      () => undefined,
+    );
     label.textContent = "已点击发布，请在 LinkedIn 确认。";
   });
   const close = button("关闭");
@@ -146,20 +140,19 @@ export async function maybeAutofill(): Promise<void> {
   const scheduleId = fillScheduleId(location.href);
   if (scheduleId === null) return;
 
-  const base = await getBackendUrl();
-  let data: any;
-  try {
-    const response = await fetch(`${base}/api/schedules/${scheduleId}`);
-    if (!response.ok) return;
-    data = await response.json();
-  } catch {
-    showOverlay("连不上本地后台，无法自动填入。", "", scheduleId, null, base);
+  const result = await chrome.runtime.sendMessage({
+    type: "GET_SCHEDULE",
+    id: scheduleId,
+  });
+  if (!result?.ok) {
+    showOverlay("连不上本地后台，无法自动填入。", "", scheduleId, null);
     return;
   }
+  const data = result.data;
 
   const text = data.draft_body || "";
   if (!text) {
-    showOverlay("这条排期没有正文。", "", scheduleId, null, base);
+    showOverlay("这条排期没有正文。", "", scheduleId, null);
     return;
   }
 
@@ -171,19 +164,23 @@ export async function maybeAutofill(): Promise<void> {
       text,
       scheduleId,
       null,
-      base,
     );
   } else {
     fillEditor(editor, text);
     if (data.image_url) {
-      await attachImage(editor, `${base}${data.image_url}`);
+      const image = await chrome.runtime.sendMessage({
+        type: "FETCH_IMAGE",
+        url: data.image_url,
+      });
+      if (image?.ok) {
+        attachImageBytes(editor, image.bytes, image.type);
+      }
     }
     showOverlay(
       "已填入，请在 LinkedIn 检查后点发布。",
       text,
       scheduleId,
       composerRoot(),
-      base,
     );
   }
   history.replaceState(null, "", location.pathname);

@@ -1,4 +1,4 @@
-import { apiFetch, getDueSchedules, getWatchlistRound, markScheduleNotified, pollBackend, postAccountSnapshot, postPostMetrics } from "./shared/api";
+import { apiFetch, getBackendUrl, getDueSchedules, getWatchlistRound, markScheduleNotified, pollBackend, postAccountSnapshot, postPostMetrics } from "./shared/api";
 import { buildRoundPlan } from "./shared/round";
 import { captureLimits } from "./shared/capture-settings";
 import { withTimeout } from "./shared/timeout";
@@ -155,6 +155,38 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     void syncAccountData()
       .then((result) => sendResponse(result))
       .catch((error) => sendResponse({ error: String(error) }));
+    return true;
+  }
+  if (msg?.type === "GET_SCHEDULE") {
+    void apiFetch<any>(`/api/schedules/${msg.id}`)
+      .then((data) => sendResponse({ ok: true, data }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+  if (msg?.type === "MARK_PUBLISHED") {
+    void apiFetch(`/api/schedules/${msg.id}/published`, {
+      method: "POST",
+      body: "{}",
+    })
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+  if (msg?.type === "FETCH_IMAGE") {
+    void (async () => {
+      try {
+        const base = await getBackendUrl();
+        const response = await fetch(base + msg.url);
+        const buffer = await response.arrayBuffer();
+        sendResponse({
+          ok: true,
+          bytes: Array.from(new Uint8Array(buffer)),
+          type: response.headers.get("content-type") || "image/png",
+        });
+      } catch (error) {
+        sendResponse({ ok: false, error: String(error) });
+      }
+    })();
     return true;
   }
   return undefined;
