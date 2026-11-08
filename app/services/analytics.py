@@ -48,20 +48,21 @@ def _latest_by_urn(metrics: list[PostMetric]) -> dict[str, PostMetric]:
 
 
 def overview(session: Session, days: int = 30) -> dict:
-    snapshots = session.exec(
-        select(AccountSnapshot)
-        .where(
-            or_(
-                AccountSnapshot.followers != None,  # noqa: E711
-                AccountSnapshot.connections != None,  # noqa: E711
-                AccountSnapshot.profile_views != None,  # noqa: E711
-                AccountSnapshot.post_impressions_7d != None,  # noqa: E711
-                AccountSnapshot.search_appearances_7d != None,  # noqa: E711
-            )
-        )
-        .order_by(AccountSnapshot.captured_at.desc())
-        .limit(2)
+    recent = session.exec(
+        select(AccountSnapshot).order_by(AccountSnapshot.captured_at.desc()).limit(10)
     ).all()
+    def completeness(snapshot: AccountSnapshot) -> int:
+        return sum(
+            1 for field in SNAPSHOT_FIELDS if getattr(snapshot, field, None) is not None
+        )
+    recent.sort(
+        key=lambda snapshot: (
+            completeness(snapshot),
+            _aware(snapshot.captured_at) or datetime.min.replace(tzinfo=timezone.utc),
+        ),
+        reverse=True,
+    )
+    snapshots = [item for item in recent if completeness(item) > 0]
     latest = snapshots[0] if snapshots else None
     previous = snapshots[1] if len(snapshots) > 1 else None
     deltas = {
@@ -84,7 +85,7 @@ def overview(session: Session, days: int = 30) -> dict:
             "engagements": engagements,
             "posts": len(latest_metrics),
         },
-        "latest_sync": latest.captured_at if latest else None,
+        "latest_sync": recent[0].captured_at if recent else None,
     }
 
 
