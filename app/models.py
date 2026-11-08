@@ -184,3 +184,17 @@ class VoiceGuide(SQLModel, table=True):
     data_sources: str = ""
     stories: str = ""
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class FetchJob(SQLModel, table=True):
+    __tablename__ = "fetch_jobs"
+
+    id: int | None = Field(default=None, primary_key=True)
+    type: str
+    url: str = ""
+    source: str | None = None
+    status: str = "queued"
+    result_json: str | None = None
+    error: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)

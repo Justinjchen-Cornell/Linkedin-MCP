@@ -83,6 +83,24 @@ B1 不会自动点 LinkedIn 的发布按钮；自动填入发布框和图片上�
 | `GET /api/v1/search?q=` | 全文搜索 |
 | `GET /api/v1/export?format=csv\|json` | 导出帖子 |
 
+### 实时抓取（异步任务）
+
+扩展会轮询任务队列，打开对应 LinkedIn 页面抓取并回填。调用后约 30 秒内完成，用 `GET /api/v1/jobs/{id}` 取结果。
+
+```bash
+# 抓自己账号：账号快照 + 本人帖子
+curl -X POST http://127.0.0.1:8765/api/v1/fetch -H "Content-Type: application/json" -d '{"type":"profile"}'
+
+# 抓单帖详细指标（按帖子 id）
+curl -X POST http://127.0.0.1:8765/api/v1/posts/1/fetch
+
+# 批量抓最近 10 篇帖子的指标
+curl -X POST http://127.0.0.1:8765/api/v1/fetch -H "Content-Type: application/json" -d '{"type":"all_post_metrics","limit":10}'
+
+# 查任务
+curl http://127.0.0.1:8765/api/v1/jobs/1
+```
+
 示例：
 
 ```bash

@@ -12,6 +12,7 @@ const SYNC_ALARM = "sync_next";
 const SYNC_STATE_KEY = "syncState";
 const ANALYTICS_ALARM = "analytics_daily";
 const DUE_ALARM = "due_check";
+const JOB_ALARM = "job_poll";
 const SECURITY_ICON =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
 
@@ -135,6 +136,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     });
   } else if (alarm.name === DUE_ALARM) {
     void checkDueSchedules();
+  } else if (alarm.name === JOB_ALARM) {
+    void processFetchJob();
   }
 });
 
@@ -192,6 +195,62 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return undefined;
 });
 
+async function processFetchJob(): Promise<void> {
+  const response = await apiFetch<{ job: any }>("/api/extension/jobs/next").catch(() => null);
+  const job = response?.job;
+  if (!job) return;
+
+  let tabId: number | undefined;
+  try {
+    const tab = await chrome.tabs.create({ url: job.url, active: true });
+    tabId = tab.id;
+    if (!tabId) throw new Error("tab_create_failed");
+    await Promise.race([waitForTabComplete(tabId).catch(() => undefined), sleep(8000)]);
+    await sleep(1500);
+
+    let result: any;
+    if (job.type === "profile") {
+      result = await sendMessageToTab(tabId, { type: "SYNC_PROFILE" });
+    } else if (job.type === "post_metrics") {
+      result = await sendMessageToTab(tabId, { type: "EXTRACT_POST_METRICS" });
+    } else if (job.type === "page") {
+      result = await sendMessageToTab(tabId, {
+        type: "CAPTURE_PAGE",
+        source: job.source || undefined,
+        scrollScreens: 2,
+      });
+    } else {
+      throw new Error("unsupported_job_type");
+    }
+
+    if (!result?.ok) {
+      if (result?.error === "security_challenge") notifySecurityChallenge();
+      await apiFetch(`/api/extension/jobs/${job.id}/result`, {
+        method: "POST",
+        body: JSON.stringify({ ok: false, error: result?.error || "fetch_failed" }),
+      });
+    } else {
+      await apiFetch(`/api/extension/jobs/${job.id}/result`, {
+        method: "POST",
+        body: JSON.stringify({ ok: true, result }),
+      });
+    }
+  } catch (error) {
+    await apiFetch(`/api/extension/jobs/${job.id}/result`, {
+      method: "POST",
+      body: JSON.stringify({ ok: false, error: String(error) }),
+    }).catch(() => undefined);
+  } finally {
+    if (tabId !== undefined) {
+      try {
+        await chrome.tabs.remove(tabId);
+      } catch {
+        // already closed
+      }
+    }
+  }
+}
+
 async function checkDueSchedules(): Promise<void> {
   const { items } = await getDueSchedules().catch(() => ({ items: [] }));
   for (const item of items) {
@@ -229,6 +288,7 @@ async function scheduleAnalyticsSync(): Promise<void> {
 
 void ensurePollAlarm();
 chrome.alarms.create(DUE_ALARM, { periodInMinutes: 1 });
+chrome.alarms.create(JOB_ALARM, { periodInMinutes: 0.5 });
 void scheduleAnalyticsSync();
 void pollBackend().catch(() => undefined);
 
