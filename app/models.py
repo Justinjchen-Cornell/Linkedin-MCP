@@ -132,6 +132,10 @@ class Draft(SQLModel, table=True):
     body: str = ""
     language: str = "en"
     status: str = "draft"
+    series_id: int | None = Field(default=None, foreign_key="series.id", index=True)
+    issue_number: int | None = None
+    kind: str = "deep"
+    parent_draft_id: int | None = None
     source_post_ids: str = "[]"
     hook_type: str | None = None
     ai_run_id: int | None = None
@@ -152,4 +156,18 @@ class Schedule(SQLModel, table=True):
     published_at: datetime | None = None
     published_url: str | None = None
     error: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class Series(SQLModel, table=True):
+    __tablename__ = "series"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    slug: str = Field(unique=True, index=True)
+    cadence: str = "weekly"
+    weekday: int = 0
+    template: str = ""
+    next_number: int = 1
+    active: bool = True
     created_at: datetime = Field(default_factory=utcnow)
