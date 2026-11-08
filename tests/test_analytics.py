@@ -61,3 +61,11 @@ def test_overview_deltas_and_posts(client):
     posts = client.get("/api/analytics/posts").json()["items"]
     assert posts[0]["urn"] == "urn:li:activity:1"
     assert posts[0]["impressions"] == 665
+
+
+def test_overview_ignores_empty_snapshot(client):
+    client.post("/api/extension/account-snapshot", json={"followers": 100, "profile_views": 900})
+    client.post("/api/extension/account-snapshot", json={})
+    data = client.get("/api/analytics/overview").json()
+    assert data["latest"]["followers"] == 100
+    assert data["latest"]["profile_views"] == 900

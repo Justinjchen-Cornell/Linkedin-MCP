@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
 from app.models import AccountSnapshot, CapturedPost, PostMetric
@@ -48,7 +49,18 @@ def _latest_by_urn(metrics: list[PostMetric]) -> dict[str, PostMetric]:
 
 def overview(session: Session, days: int = 30) -> dict:
     snapshots = session.exec(
-        select(AccountSnapshot).order_by(AccountSnapshot.captured_at.desc()).limit(2)
+        select(AccountSnapshot)
+        .where(
+            or_(
+                AccountSnapshot.followers != None,  # noqa: E711
+                AccountSnapshot.connections != None,  # noqa: E711
+                AccountSnapshot.profile_views != None,  # noqa: E711
+                AccountSnapshot.post_impressions_7d != None,  # noqa: E711
+                AccountSnapshot.search_appearances_7d != None,  # noqa: E711
+            )
+        )
+        .order_by(AccountSnapshot.captured_at.desc())
+        .limit(2)
     ).all()
     latest = snapshots[0] if snapshots else None
     previous = snapshots[1] if len(snapshots) > 1 else None
