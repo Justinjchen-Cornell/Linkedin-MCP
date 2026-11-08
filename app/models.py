@@ -172,3 +172,15 @@ class Series(SQLModel, table=True):
     next_number: int = 1
     active: bool = True
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class VoiceGuide(SQLModel, table=True):
+    __tablename__ = "voice_guide"
+
+    id: int = Field(default=1, primary_key=True)
+    beliefs: str = ""
+    signature_phrases: str = ""
+    banned_phrases: str = ""
+    data_sources: str = ""
+    stories: str = ""
+    updated_at: datetime = Field(default_factory=utcnow)

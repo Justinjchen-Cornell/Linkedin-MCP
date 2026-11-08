@@ -7,6 +7,7 @@ from app.models import CapturedPost
 from app.services import ai_config
 from app.services.settings import get_setting
 from app.services.style_profile import build_style_profile
+from app.services.voice import voice_text
 
 
 class AIConfigError(Exception):
@@ -67,6 +68,7 @@ def generate_variants(
     base_url = get_setting(session, "ai_base_url", "https://api.deepseek.com")
     model = get_setting(session, "ai_model", "deepseek-chat")
     profile = build_style_profile(session)
+    voice = voice_text(session)
 
     sources = []
     if source_post_ids:
@@ -87,7 +89,7 @@ def generate_variants(
     )
     user = (
         f"主题：{topic}\n角度：{angle or '自选'}\n语言：{language}\n生成 {count} 个不同版本。\n"
-        f"我的历史风格：\n{profile_text}\n\n参考素材：\n" + "\n---\n".join(sources)
+        f"我的历史风格：\n{profile_text}\n\n我的 voice guide：\n{voice}\n\n参考素材：\n" + "\n---\n".join(sources)
     )
     content = _chat(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
