@@ -40,3 +40,10 @@ def analytics_posts(
 
     items = latest_post_metrics(session, days, limit)
     return {"items": items, "total": len(items)}
+
+
+@router.get("/analytics/best-times")
+def analytics_best_times(session: Session = Depends(get_session)) -> dict:
+    from app.services.analytics import best_times
+
+    return best_times(session)

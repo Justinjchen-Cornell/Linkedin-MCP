@@ -15,6 +15,7 @@
     <div class="card-foot"><span>{{ item.local_time }}（{{ item.schedule.timezone }}）</span></div>
     <div class="actions">
       <button class="copy-open" data-id="{{ item.schedule.id }}" data-body="{{ item.draft.body }}">复制并打开 LinkedIn</button>
+      <button class="autofill" data-id="{{ item.schedule.id }}">尝试自动填入</button>
       <form method="post" action="/calendar/{{ item.schedule.id }}/published">
         <button type="submit" class="secondary">标记已发布</button>
       </form>
@@ -40,6 +41,11 @@ async function copyText(text) {
     return ok;
   }
 }
+document.querySelectorAll(".autofill").forEach((button) => {
+  button.addEventListener("click", () => {
+    window.open(`https://www.linkedin.com/feed/?lw_fill=${button.dataset.id}`, "_blank", "noopener");
+  });
+});
 document.querySelectorAll(".copy-open").forEach((button) => {
   button.addEventListener("click", async () => {
     const body = button.dataset.body || "";

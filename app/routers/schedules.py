@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.db import get_session
-from app.models import Schedule
+from app.models import Draft, Schedule
 from app.schemas.drafts import ScheduleRead
 
 router = APIRouter()
@@ -89,3 +89,23 @@ def mark_published(
     session.commit()
     session.refresh(schedule)
     return schedule
+
+
+@router.get("/schedules/{schedule_id}")
+def get_schedule(schedule_id: int, session: Session = Depends(get_session)) -> dict:
+    schedule = session.get(Schedule, schedule_id)
+    if schedule is None:
+        raise HTTPException(status_code=404, detail="schedule not found")
+    draft = session.get(Draft, schedule.draft_id)
+    return {
+        "id": schedule.id,
+        "draft_id": schedule.draft_id,
+        "scheduled_at_utc": schedule.scheduled_at_utc,
+        "timezone": schedule.timezone,
+        "status": schedule.status,
+        "draft_title": draft.title if draft else "",
+        "draft_body": draft.body if draft else "",
+        "image_url": (
+            f"/api/drafts/{draft.id}/image" if draft and draft.image_path else None
+        ),
+    }

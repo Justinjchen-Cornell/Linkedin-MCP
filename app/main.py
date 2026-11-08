@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -11,9 +11,11 @@ from app import models  # noqa: F401
 from app.db import get_session, init_db
 from app.routers import ai, analytics, drafts, extension, health, people, plan, posts, schedules, series, settings, watchlist
 from app.models import Draft, Schedule, Series, Setting, WatchlistItem
+from app.routers.drafts import upload_draft_image
 from app.routers.plan import next_issue as create_next_issue, week_plan
 from app.routers.posts import get_post, list_posts
 from app.services import ai_config
+from app.services.analytics import best_times as get_best_times
 from app.services.analytics import latest_post_metrics, overview as analytics_overview
 from app.services.settings import set_setting
 
@@ -221,7 +223,7 @@ def draft_editor_page(
     return templates.TemplateResponse(
         request=request,
         name="draft_editor.html",
-        context={"draft": draft},
+        context={"draft": draft, "best_times": get_best_times(session)},
     )
 
 
@@ -377,3 +379,13 @@ def plan_light(
     session.commit()
     session.refresh(draft)
     return RedirectResponse(f"/drafts/{draft.id}", status_code=303)
+
+
+@app.post("/drafts/{draft_id}/image")
+def upload_draft_image_form(
+    draft_id: int,
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+):
+    upload_draft_image(draft_id, file, session)
+    return RedirectResponse(f"/drafts/{draft_id}", status_code=303)

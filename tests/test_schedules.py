@@ -25,3 +25,10 @@ def test_due_excludes_published_but_includes_notified_until_published(client):
     assert client.get("/api/schedules/due").json()["items"][0]["id"] == sid
     client.post(f"/api/schedules/{sid}/published", json={})
     assert client.get("/api/schedules/due").json()["items"] == []
+
+
+def test_schedule_detail_includes_draft_body(client):
+    d = client.post("/api/drafts", json={"title": "T", "body": "detail body"}).json()
+    sid = client.post(f"/api/drafts/{d['id']}/schedule", json={"scheduled_at": "2026-11-01T00:00:00Z"}).json()["id"]
+    data = client.get(f"/api/schedules/{sid}").json()
+    assert data["draft_body"] == "detail body"

@@ -23,6 +23,7 @@ def init_db() -> None:
             "issue_number": "INTEGER",
             "kind": "TEXT DEFAULT 'deep'",
             "parent_draft_id": "INTEGER",
+            "image_path": "TEXT",
         }.items():
             if name not in columns:
                 conn.execute(text(f"ALTER TABLE drafts ADD COLUMN {name} {ddl}"))

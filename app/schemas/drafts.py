@@ -32,6 +32,7 @@ class DraftRead(BaseModel):
     issue_number: int | None = None
     kind: str = "deep"
     parent_draft_id: int | None = None
+    image_path: str | None = None
     source_post_ids: str
     hook_type: str | None = None
     ai_run_id: int | None = None

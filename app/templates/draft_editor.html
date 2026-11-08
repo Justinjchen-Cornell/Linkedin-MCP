@@ -18,8 +18,27 @@
     <button type="submit">保存草稿</button>
   </form>
 
+  <form method="post" action="/drafts/{{ draft.id }}/image" enctype="multipart/form-data" class="panel editor-form">
+    <h2>配图</h2>
+    <input type="file" name="file" accept="image/*" />
+    <button type="submit">上传图片</button>
+    {% if draft.image_path %}<img src="/api/drafts/{{ draft.id }}/image" class="preview-image" alt="配图" />{% endif %}
+  </form>
+
+  <section class="panel">
+    <h2>LinkedIn 预览</h2>
+    <div class="linkedin-preview">
+      <div class="preview-author">Justin Chen</div>
+      <div id="preview-text"></div>
+      <span id="preview-more" class="preview-more">…see more</span>
+      <div id="preview-count" class="meta"></div>
+      {% if draft.image_path %}<img src="/api/drafts/{{ draft.id }}/image" class="preview-image" alt="" />{% endif %}
+    </div>
+  </section>
+
   <form method="post" action="/drafts/{{ draft.id }}/schedule" class="panel editor-form">
     <h2>排期</h2>
+    <p class="muted">建议发布时间：{% for item in best_times["items"] %}周{{ item.weekday + 1 }} {{ item.hour }}:00{% if not loop.last %} / {% endif %}{% endfor %}（{{ "历史数据" if best_times["source"] == "history" else "默认" }}）</p>
     <label>发布时间（本地时区）
       <input type="datetime-local" name="scheduled_at" required />
     </label>
@@ -38,6 +57,16 @@
 </div>
 
 <script>
+const bodyInput = document.querySelector("textarea[name=body]");
+function renderPreview() {
+  const text = bodyInput.value;
+  document.getElementById("preview-text").textContent = text.slice(0, 210);
+  document.getElementById("preview-more").style.display = text.length > 210 ? "inline" : "none";
+  document.getElementById("preview-count").textContent = `${text.length} / 3000 字符`;
+}
+bodyInput.addEventListener("input", renderPreview);
+renderPreview();
+
 document.getElementById("ai-generate").addEventListener("click", async () => {
   const box = document.getElementById("variants");
   box.textContent = "生成中…";

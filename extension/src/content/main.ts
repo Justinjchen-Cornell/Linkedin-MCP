@@ -1,4 +1,5 @@
 import { extractAccountSnapshot, hasProfileMetrics, hasProfilePosts } from "./analytics";
+import { maybeAutofill } from "./autofill";
 import { detectPageType, extractPostsFromDocument, isSecurityChallenge } from "./extract";
 import { shouldInject } from "./guard";
 import { extractPostMetrics, hasPostMetrics } from "./post_metrics";
@@ -92,3 +93,5 @@ if (shouldInject(window)) {
     return true;
   });
 }
+
+void maybeAutofill();

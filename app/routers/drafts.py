@@ -1,8 +1,11 @@
 import json
 import re
+import shutil
+from pathlib import Path
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 
 from app.db import get_session
@@ -148,3 +151,37 @@ def derive_light_drafts(draft_id: int, session: Session = Depends(get_session)):
     for item in items:
         session.refresh(item)
     return {"items": items}
+
+
+UPLOAD_DIR = Path("data/uploads")
+
+
+@router.post("/drafts/{draft_id}/image")
+def upload_draft_image(
+    draft_id: int,
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+):
+    draft = session.get(Draft, draft_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail="draft not found")
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename or "image").suffix or ".png"
+    path = UPLOAD_DIR / f"draft_{draft_id}{suffix}"
+    with path.open("wb") as target:
+        shutil.copyfileobj(file.file, target)
+    draft.image_path = str(path)
+    session.add(draft)
+    session.commit()
+    return {"image_path": draft.image_path}
+
+
+@router.get("/drafts/{draft_id}/image")
+def get_draft_image(draft_id: int, session: Session = Depends(get_session)):
+    draft = session.get(Draft, draft_id)
+    if draft is None or not draft.image_path:
+        raise HTTPException(status_code=404, detail="image not found")
+    path = Path(draft.image_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="image not found")
+    return FileResponse(path)

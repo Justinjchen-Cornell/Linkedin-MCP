@@ -86,3 +86,17 @@ def test_series_and_plan_pages(client):
 def test_editor_has_derive_button(client):
     d = client.post("/api/drafts", json={"title": "Deep", "body": "VIX 21.15. My view: liquidity."}).json()
     assert "拆成 2 条轻量" in client.get(f"/drafts/{d['id']}").text
+
+
+def test_editor_has_preview_image_and_best_time(client):
+    d = client.post("/api/drafts", json={"title": "T", "body": "hello"}).json()
+    html = client.get(f"/drafts/{d['id']}").text
+    assert "LinkedIn 预览" in html
+    assert "上传图片" in html
+    assert "建议发布时间" in html
+
+
+def test_calendar_has_autofill_button(client):
+    d = client.post("/api/drafts", json={"title": "T", "body": "autofill body"}).json()
+    client.post(f"/api/drafts/{d['id']}/schedule", json={"scheduled_at": "2026-11-01T00:00:00Z"})
+    assert "尝试自动填入" in client.get("/calendar").text

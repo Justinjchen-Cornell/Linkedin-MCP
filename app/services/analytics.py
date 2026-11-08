@@ -110,3 +110,32 @@ def latest_post_metrics(session: Session, days: int = 30, limit: int = 50) -> li
         )
     items.sort(key=lambda item: item["impressions"] or 0, reverse=True)
     return items[:limit]
+
+
+def best_times(session: Session) -> dict:
+    from app.models import Schedule
+
+    published = session.exec(
+        select(Schedule).where(Schedule.status == "published", Schedule.published_at != None)  # noqa: E711
+    ).all()
+    counts: dict[tuple[int, int], int] = {}
+    for item in published:
+        moment = _aware(item.published_at)
+        if moment is None:
+            continue
+        key = (moment.weekday(), moment.hour)
+        counts[key] = counts.get(key, 0) + 1
+    if len(published) >= 3 and counts:
+        top = sorted(counts.items(), key=lambda pair: pair[1], reverse=True)[:3]
+        return {
+            "source": "history",
+            "items": [{"weekday": weekday, "hour": hour, "count": count} for (weekday, hour), count in top],
+        }
+    return {
+        "source": "default",
+        "items": [
+            {"weekday": 1, "hour": 9, "count": 0},
+            {"weekday": 2, "hour": 9, "count": 0},
+            {"weekday": 3, "hour": 9, "count": 0},
+        ],
+    }
