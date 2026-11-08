@@ -49,15 +49,17 @@ def week_plan(start: str | None = None, session: Session = Depends(get_session))
         slot_date = week_start + timedelta(days=index)
         series = next((item for item in series_list if item.weekday == index), None)
         if series:
-            issue = series.next_number
             existing = next(
                 (
                     draft
                     for draft in drafts
-                    if draft.series_id == series.id and draft.issue_number == issue
+                    if draft.series_id == series.id
+                    and draft.issue_number == series.next_number - 1
+                    and draft.status in {"draft", "scheduled"}
                 ),
                 None,
             )
+            issue = existing.issue_number if existing else series.next_number
             slots.append(
                 {
                     "date": slot_date.isoformat(),

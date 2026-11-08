@@ -13,3 +13,11 @@ def test_week_plan_has_five_slots(client):
     assert plan["slots"][0]["kind"] == "deep"
     assert plan["slots"][0]["series_name"] == "GOR"
     assert plan["slots"][2]["kind"] == "light"
+
+
+def test_plan_shows_created_next_issue(client):
+    s = client.post("/api/series", json={"name": "GOR", "slug": "gor2", "weekday": 0, "template": "T"}).json()
+    d = client.post(f"/api/series/{s['id']}/next-issue").json()
+    plan = client.get("/api/plan/week").json()
+    assert plan["slots"][0]["draft_id"] == d["id"]
+    assert plan["slots"][0]["issue_number"] == 1
