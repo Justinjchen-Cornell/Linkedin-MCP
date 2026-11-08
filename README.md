@@ -99,6 +99,9 @@ curl -X POST http://127.0.0.1:8765/api/v1/fetch -H "Content-Type: application/js
 
 # 查任务
 curl http://127.0.0.1:8765/api/v1/jobs/1
+
+# 同步等待（最多 90 秒）：完成直接返回 result，超时返回 queued/running
+curl -X POST http://127.0.0.1:8765/api/v1/fetch -H "Content-Type: application/json"   -d '{"type":"profile","sync":true,"timeout":90}'
 ```
 
 示例：

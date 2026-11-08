@@ -1,6 +1,7 @@
 import json
+import time
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
 from app.db import get_session
@@ -15,6 +16,31 @@ def _post_summary_url(urn: str) -> str:
     return f"https://www.linkedin.com/analytics/post-summary/{urn}/"
 
 
+def _job_payload(job: FetchJob) -> dict:
+    return {
+        "id": job.id,
+        "type": job.type,
+        "url": job.url,
+        "status": job.status,
+        "error": job.error,
+        "result": json.loads(job.result_json) if job.result_json else None,
+        "created_at": job.created_at,
+        "updated_at": job.updated_at,
+    }
+
+
+def _wait_for_job(session: Session, job_id: int, timeout: int) -> FetchJob:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        session.expire_all()
+        job = session.get(FetchJob, job_id)
+        if job and job.status in {"done", "failed"}:
+            return job
+        time.sleep(0.5)
+    session.expire_all()
+    return session.get(FetchJob, job_id)
+
+
 def _create_job(session: Session, job_type: str, url: str, source: str | None = None) -> FetchJob:
     job = FetchJob(type=job_type, url=url, source=source)
     session.add(job)
@@ -24,12 +50,16 @@ def _create_job(session: Session, job_type: str, url: str, source: str | None = 
 
 
 @router.post("/fetch", status_code=202)
-def create_fetch(payload: FetchRequest, session: Session = Depends(get_session)):
+def create_fetch(payload: FetchRequest, response: Response, session: Session = Depends(get_session)):
     if payload.type == "profile":
         url = get_setting(session, "own_profile_url", "")
         if not url:
             raise HTTPException(status_code=400, detail="own_profile_url is not configured")
         job = _create_job(session, "profile", url)
+        if payload.sync:
+            job = _wait_for_job(session, job.id, payload.timeout)
+            response.status_code = 200 if job.status in {"done", "failed"} else 202
+            return _job_payload(job)
         return {"id": job.id, "status": job.status, "type": job.type}
 
     if payload.type in {"post_metrics", "page"}:
@@ -39,6 +69,10 @@ def create_fetch(payload: FetchRequest, session: Session = Depends(get_session))
         if payload.type == "post_metrics" and "analytics/post-summary/" not in url:
             raise HTTPException(status_code=400, detail="url must be a post-summary URL")
         job = _create_job(session, payload.type, url, payload.source)
+        if payload.sync:
+            job = _wait_for_job(session, job.id, payload.timeout)
+            response.status_code = 200 if job.status in {"done", "failed"} else 202
+            return _job_payload(job)
         return {"id": job.id, "status": job.status, "type": job.type}
 
     if payload.type == "all_post_metrics":
@@ -70,16 +104,7 @@ def get_job(job_id: int, session: Session = Depends(get_session)) -> dict:
     job = session.get(FetchJob, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="job not found")
-    return {
-        "id": job.id,
-        "type": job.type,
-        "url": job.url,
-        "status": job.status,
-        "error": job.error,
-        "result": json.loads(job.result_json) if job.result_json else None,
-        "created_at": job.created_at,
-        "updated_at": job.updated_at,
-    }
+    return _job_payload(job)
 
 
 @router.get("/jobs")

@@ -8,3 +8,5 @@ class FetchRequest(BaseModel):
     urn: str | None = None
     source: str | None = None
     limit: int = Field(default=10, ge=1, le=50)
+    sync: bool = False
+    timeout: int = Field(default=90, ge=2, le=120)
