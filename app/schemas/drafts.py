@@ -28,6 +28,10 @@ class DraftRead(BaseModel):
     body: str
     language: str
     status: str
+    series_id: int | None = None
+    issue_number: int | None = None
+    kind: str = "deep"
+    parent_draft_id: int | None = None
     source_post_ids: str
     hook_type: str | None = None
     ai_run_id: int | None = None
