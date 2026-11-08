@@ -89,13 +89,23 @@ def create_fetch(payload: FetchRequest, response: Response, session: Session = D
 
 
 @router.post("/posts/{post_id}/fetch", status_code=202)
-def fetch_post_metrics(post_id: int, session: Session = Depends(get_session)):
+def fetch_post_metrics(
+    post_id: int,
+    response: Response,
+    sync: bool = False,
+    timeout: int = 90,
+    session: Session = Depends(get_session),
+):
     post = session.get(CapturedPost, post_id)
     if post is None:
         raise HTTPException(status_code=404, detail="post not found")
     if not post.urn:
         raise HTTPException(status_code=400, detail="post has no LinkedIn urn")
     job = _create_job(session, "post_metrics", _post_summary_url(post.urn))
+    if sync:
+        job = _wait_for_job(session, job.id, max(2, min(timeout, 120)))
+        response.status_code = 200 if job.status in {"done", "failed"} else 202
+        return _job_payload(job)
     return {"id": job.id, "status": job.status, "type": job.type}
 
 

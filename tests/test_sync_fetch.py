@@ -35,3 +35,12 @@ def test_sync_fetch_returns_result_when_worker_completes(client):
     data = r.json()
     assert data["status"] == "done"
     assert data["result"]["snapshot"]["followers"] == 1775
+
+
+def test_post_fetch_sync_times_out_with_status(client):
+    client.post("/api/extension/capture", json={"posts": [{
+        "urn": "urn:li:activity:1", "author_name": "Me", "text": "post",
+    }]})
+    r = client.post("/api/v1/posts/1/fetch?sync=true&timeout=2")
+    assert r.status_code in {200, 202}
+    assert r.json()["status"] in {"queued", "running"}

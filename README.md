@@ -94,6 +94,9 @@ curl -X POST http://127.0.0.1:8765/api/v1/fetch -H "Content-Type: application/js
 # 抓单帖详细指标（按帖子 id）
 curl -X POST http://127.0.0.1:8765/api/v1/posts/1/fetch
 
+# 单帖同步等待
+curl -X POST "http://127.0.0.1:8765/api/v1/posts/1/fetch?sync=true&timeout=90"
+
 # 批量抓最近 10 篇帖子的指标
 curl -X POST http://127.0.0.1:8765/api/v1/fetch -H "Content-Type: application/json" -d '{"type":"all_post_metrics","limit":10}'
 
