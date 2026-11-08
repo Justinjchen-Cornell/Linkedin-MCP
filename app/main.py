@@ -10,7 +10,8 @@ from sqlmodel import Session, select
 from app import models  # noqa: F401
 from app.db import get_session, init_db
 from app.routers import ai, analytics, drafts, extension, health, people, plan, posts, schedules, series, settings, watchlist
-from app.models import Draft, Schedule, Setting, WatchlistItem
+from app.models import Draft, Schedule, Series, Setting, WatchlistItem
+from app.routers.plan import next_issue as create_next_issue, week_plan
 from app.routers.posts import get_post, list_posts
 from app.services import ai_config
 from app.services.analytics import latest_post_metrics, overview as analytics_overview
@@ -313,3 +314,66 @@ def skip_schedule_form(schedule_id: int, session: Session = Depends(get_session)
         session.add(schedule)
         session.commit()
     return RedirectResponse("/calendar", status_code=303)
+
+
+@app.get("/series", response_class=HTMLResponse)
+def series_page(request: Request, session: Session = Depends(get_session)):
+    series_list = session.exec(select(Series).order_by(Series.weekday)).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="series.html",
+        context={"series_list": series_list},
+    )
+
+
+@app.post("/series")
+def create_series_form(
+    name: str = Form(...),
+    slug: str = Form(...),
+    weekday: int = Form(0),
+    template: str = Form(""),
+    session: Session = Depends(get_session),
+):
+    if session.exec(select(Series).where(Series.slug == slug)).first():
+        raise HTTPException(status_code=409, detail="series slug already exists")
+    session.add(
+        Series(name=name.strip(), slug=slug.strip(), weekday=weekday, template=template)
+    )
+    session.commit()
+    return RedirectResponse("/series", status_code=303)
+
+
+@app.post("/series/{series_id}/delete")
+def delete_series_form(series_id: int, session: Session = Depends(get_session)):
+    series = session.get(Series, series_id)
+    if series is not None:
+        session.delete(series)
+        session.commit()
+    return RedirectResponse("/series", status_code=303)
+
+
+@app.get("/plan", response_class=HTMLResponse)
+def plan_page(request: Request, session: Session = Depends(get_session)):
+    plan = week_plan(start=None, session=session)
+    return templates.TemplateResponse(
+        request=request,
+        name="plan.html",
+        context={"plan": plan},
+    )
+
+
+@app.post("/plan/next-issue/{series_id}")
+def plan_next_issue(series_id: int, session: Session = Depends(get_session)):
+    draft = create_next_issue(series_id, session)
+    return RedirectResponse(f"/drafts/{draft.id}", status_code=303)
+
+
+@app.post("/plan/light")
+def plan_light(
+    title: str = Form("轻量"), session: Session = Depends(get_session)
+):
+    draft = Draft(title=title, body="", kind="light")
+    session.add(draft)
+    session.commit()
+    session.refresh(draft)
+    return RedirectResponse(f"/drafts/{draft.id}", status_code=303)

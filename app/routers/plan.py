@@ -62,6 +62,7 @@ def week_plan(start: str | None = None, session: Session = Depends(get_session))
                 {
                     "date": slot_date.isoformat(),
                     "kind": "deep",
+                    "series_id": series.id,
                     "series_name": series.name,
                     "issue_number": issue,
                     "title": f"{series.name} #{issue}",

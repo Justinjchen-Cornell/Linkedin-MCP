@@ -74,3 +74,15 @@ def test_calendar_page_lists_scheduled_post(client):
     html = client.get("/calendar").text
     assert "calendar body" in html and "复制并打开 LinkedIn" in html
     assert "08:00" in html
+
+
+def test_series_and_plan_pages(client):
+    client.post("/api/series", json={"name": "GOR", "slug": "gor", "weekday": 0, "template": "T"})
+    assert "GOR" in client.get("/series").text
+    plan = client.get("/plan").text
+    assert "GOR" in plan and "数据卡" in plan
+
+
+def test_editor_has_derive_button(client):
+    d = client.post("/api/drafts", json={"title": "Deep", "body": "VIX 21.15. My view: liquidity."}).json()
+    assert "拆成 2 条轻量" in client.get(f"/drafts/{d['id']}").text

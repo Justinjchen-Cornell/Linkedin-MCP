@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div><h1>系列</h1><div class="meta">3 篇深度来自系列；每周固定槽位</div></div>
+  <a class="back" href="/plan">去看本周计划 →</a>
+</header>
+
+<section class="panel">
+  <h2>新建系列</h2>
+  <form method="post" action="/series" class="form-grid">
+    <label>名称<input type="text" name="name" required placeholder="GOR Pulse" /></label>
+    <label>Slug<input type="text" name="slug" required placeholder="gor-pulse" /></label>
+    <label>星期
+      <select name="weekday">
+        <option value="0">周一</option><option value="1">周二</option><option value="2">周三</option>
+        <option value="3">周四</option><option value="4">周五</option>
+      </select>
+    </label>
+    <label>模板（下一期正文骨架）<textarea name="template" rows="4" placeholder="标题、数据段、判断、levels、免责声明"></textarea></label>
+    <button type="submit">创建</button>
+  </form>
+</section>
+
+<div class="cards">
+  {% for series in series_list %}
+  <article class="card">
+    <div class="card-head"><b>{{ series.name }}</b><span class="tag">周{{ series.weekday + 1 }}</span><span class="muted">下一期 #{{ series.next_number }}</span></div>
+    <p class="excerpt">{{ series.template[:200] }}{% if series.template|length > 200 %}…{% endif %}</p>
+    <form method="post" action="/series/{{ series.id }}/delete">
+      <button type="submit" class="secondary">删除</button>
+    </form>
+  </article>
+  {% else %}
+  <div class="empty">还没有系列。先建 GOR Pulse / Energy & Inflation Watch。</div>
+  {% endfor %}
+</div>
+{% endblock %}

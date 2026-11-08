@@ -32,6 +32,8 @@
     <label>角度<input id="ai-angle" type="text" placeholder="故事 / 反共识 / 清单 / 复盘" /></label>
     <button type="button" id="ai-generate">生成 3 版</button>
     <div id="variants" class="variants"><p class="muted">配置 API Key 后可生成。</p></div>
+    <button type="button" id="derive">拆成 2 条轻量</button>
+    <div id="derive-result" class="muted"></div>
   </aside>
 </div>
 
@@ -74,6 +76,24 @@ document.getElementById("ai-generate").addEventListener("click", async () => {
   } catch (error) {
     box.textContent = String(error);
   }
+});
+</script>
+<script>
+document.getElementById("derive")?.addEventListener("click", async () => {
+  const box = document.getElementById("derive-result");
+  box.textContent = "生成中…";
+  const response = await fetch("/api/drafts/{{ draft.id }}/derive", { method: "POST" });
+  const data = await response.json();
+  if (!response.ok) { box.textContent = data.detail || "生成失败"; return; }
+  box.innerHTML = "";
+  data.items.forEach((item) => {
+    const link = document.createElement("a");
+    link.href = `/drafts/${item.id}`;
+    link.textContent = item.title + " ";
+    link.style.marginRight = "10px";
+    box.append(link);
+  });
+  box.append("（已创建）");
 });
 </script>
 {% endblock %}

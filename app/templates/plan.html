@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="page-head">
+  <div><h1>本周计划</h1><div class="meta">{{ plan.week_start }} 起 · 3 篇深度 + 2 篇轻量</div></div>
+  <a class="back" href="/series">管理系列 →</a>
+</header>
+
+{% if plan.warnings %}
+<div class="panel warning">
+  {% for warning in plan.warnings %}<div>{{ warning }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="plan-grid">
+  {% for slot in plan.slots %}
+  <div class="plan-slot {{ slot.kind }}">
+    <div class="plan-date">{{ slot.date }}</div>
+    <div class="plan-kind">{{ "深度" if slot.kind == "deep" else "轻量" }}</div>
+    <div class="plan-title">{{ slot.title }}</div>
+    {% if slot.kind == "deep" and slot.series_name %}
+    <div class="meta">系列：{{ slot.series_name }} · #{{ slot.issue_number }}</div>
+    {% endif %}
+    <div class="meta">状态：{{ slot.status }}</div>
+    <div class="actions">
+      {% if slot.kind == "deep" and slot.draft_id %}
+      <a class="button" href="/drafts/{{ slot.draft_id }}">打开草稿</a>
+      {% elif slot.kind == "deep" %}
+      <form method="post" action="/plan/next-issue/{{ slot.series_id }}">
+        <button type="submit">生成下一期</button>
+      </form>
+      {% endif %}
+      {% if slot.kind == "light" %}
+      <form method="post" action="/plan/light">
+        <input type="hidden" name="title" value="{{ slot.title }}" />
+        <button type="submit" class="secondary">新建轻量</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
